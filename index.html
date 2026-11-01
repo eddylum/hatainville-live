@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hatainville Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08090b; --surface:#0e1013; --surface-2:#14171b; --line:rgba(255,255,255,.06); --line-2:rgba(255,255,255,.1);
+  --txt:#f3f4f6; --mut:#8a909a; --dim:#555b65;
+  --tide:#7cc7ff; --bass:#5ee0a0; --surf:#b69cff; --rain:#6aa8ff; --sun:#f2c46b;
+  --good:#5ee0a0; --fair:#c9dd6e; --mid:#f2c46b; --bad:#ef7f7f;
+  --sans:Geist,Inter,system-ui,-apple-system,sans-serif; --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;min-height:100vh}
+.mono{font-variant-numeric:tabular-nums}
+body{font-feature-settings:"tnum" 1}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 24px 72px}
+@media(max-width:640px){.wrap{padding:20px 16px 56px}}
+a{color:var(--txt);text-decoration:none;border-bottom:1px solid var(--line-2)}
+a:hover{border-color:var(--txt)}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* header */
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:16px}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--tide),#3b6fd8);display:grid;place-items:center;color:#06121f}
+.mark svg{width:16px;height:16px;stroke-width:2}
+.name{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.meta{font-size:12px;color:var(--mut)}
+.status{display:flex;align-items:center;gap:14px;color:var(--mut);font-size:12px}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(94,224,160,.5);animation:pulse 2.4s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(94,224,160,0)}100%{box-shadow:0 0 0 0 rgba(94,224,160,0)}}
+.icon-btn{background:none;border:1px solid var(--line-2);color:var(--mut);width:32px;height:32px;border-radius:9px;display:grid;place-items:center;cursor:pointer;transition:.2s}
+.icon-btn:hover{color:var(--txt);border-color:var(--mut)}
+.icon-btn.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* days */
+.days{display:grid;grid-template-columns:repeat(8,minmax(104px,1fr));gap:6px;margin-bottom:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.day{scroll-snap-align:start;text-align:left;background:transparent;border:1px solid transparent;color:var(--txt);font:inherit;padding:12px 12px 11px;border-radius:14px;cursor:pointer;transition:background .2s,border-color .2s}
+.day:hover{background:var(--surface)}
+.day.sel{background:var(--surface-2);border-color:var(--line-2)}
+.day .top{display:flex;justify-content:space-between;align-items:center;color:var(--mut)}
+.day .dn{font-size:12px;text-transform:capitalize}
+.day.sel .dn{color:var(--txt)}
+.day .dd{font-size:22px;font-weight:500;letter-spacing:-.02em;margin:2px 0 6px}
+.day .tt{font-size:11px;color:var(--mut);margin-bottom:10px}
+.mini{display:grid;grid-template-columns:auto 1fr auto;gap:4px 6px;align-items:center;font-size:10px;color:var(--mut)}
+.mini i{height:3px;border-radius:2px;background:var(--line-2);overflow:hidden;display:block}
+.mini i u{display:block;height:100%;border-radius:2px}
+.mini b{font-weight:500;color:var(--txt);font-size:10px;text-align:right;min-width:16px}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:24px}
+@media(max-width:640px){.panel{padding:18px;border-radius:18px}}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+.eyebrow{font-size:11px;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
+h2{font-size:24px;font-weight:500;letter-spacing:-.025em;margin-top:4px}
+h2::first-letter{text-transform:uppercase}
+.wins{display:flex;gap:28px}
+.win .k{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut)}
+.win .k i{width:7px;height:7px;border-radius:50%}
+.win .v{font-size:18px;font-weight:500;margin-top:2px}
+.win .v small{font-size:12px;color:var(--mut);margin-left:6px;font-weight:400}
+.win .v.none{color:var(--dim);font-size:14px;font-weight:400;padding-top:3px}
+.chart{overflow-x:auto;margin:0 -6px;scrollbar-width:thin}
+.chart svg{display:block;width:100%;min-width:760px;height:auto}
+.chart text{font-family:var(--sans);font-variant-numeric:tabular-nums}
+.facts{display:flex;flex-wrap:wrap;margin-top:20px;border-top:1px solid var(--line);padding-top:16px;row-gap:14px}
+.fact{padding:0 22px;border-left:1px solid var(--line)}
+.fact:first-child{padding-left:0;border-left:0}
+.fact .k{font-size:11px;color:var(--mut);display:flex;align-items:center;gap:6px}
+.fact .k svg{width:13px;height:13px}
+.fact .v{font-size:15px;font-weight:500;margin-top:2px}
+.fact .v small{color:var(--mut);font-weight:400;font-size:12px}
+@media(max-width:640px){.fact{padding:0 14px}}
+
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:44px 0 14px;gap:12px}
+.sec h3{font-size:15px;font-weight:500;letter-spacing:-.01em}
+.sec span{font-size:12px;color:var(--mut)}
+
+/* now */
+.now{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:0}
+.now > div{padding:4px 28px}
+.now > div:first-child{padding-left:0}
+.now > div + div{border-left:1px solid var(--line)}
+@media(max-width:980px){.now{grid-template-columns:1fr 1fr}.now > .metrics{grid-column:1/-1;border-left:0!important;padding:24px 0 0;margin-top:24px;border-top:1px solid var(--line)}}
+@media(max-width:640px){.now{grid-template-columns:1fr}.now > div{padding:0!important;border-left:0!important}.now > div + div{border-top:1px solid var(--line);margin-top:22px;padding-top:22px!important}}
+.s-head{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
+.s-head i{width:7px;height:7px;border-radius:50%}
+.s-main{display:flex;align-items:baseline;gap:12px;margin:10px 0 12px}
+.s-num{font-size:64px;font-weight:300;letter-spacing:-.05em;line-height:.9}
+.s-verdict{font-size:14px;font-weight:500}
+.s-track{height:2px;background:var(--line-2);border-radius:2px;margin-bottom:16px;overflow:hidden}
+.s-track i{display:block;height:100%;border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:5px 0}
+.kv .k{color:var(--mut)}
+.kv .v{text-align:right}
+.why{list-style:none;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.why li{display:flex;align-items:center;gap:9px;font-size:12px;color:#c9ccd2;padding:3px 0}
+.why li i{width:5px;height:5px;border-radius:50%;flex:none}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:26px 20px;align-content:start}
+@media(max-width:640px){.metrics{grid-template-columns:1fr 1fr}}
+.m .k{font-size:12px;color:var(--mut)}
+.m .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+.m .v{font-size:28px;font-weight:300;letter-spacing:-.04em;line-height:1.1}
+.m .v small{font-size:12px;color:var(--mut);letter-spacing:0;margin-left:3px;font-weight:400}
+.m .sub{font-size:11px;color:var(--mut);margin-top:3px}
+.dial{width:38px;height:38px;flex:none}
+
+/* table */
+.tbl{overflow-x:auto;scrollbar-width:thin;padding:8px 0}
+table{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
+th,td{text-align:center;padding:7px 2px;min-width:40px;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{position:sticky;left:0;background:var(--surface);text-align:left;color:var(--mut);font-family:var(--sans);font-weight:400;z-index:1;padding:7px 16px 7px 24px;min-width:120px}
+tr + tr th, tr + tr td{border-top:1px solid var(--line)}
+tr.hrow td{color:var(--mut);font-size:11px}
+td.night{opacity:.38}
+td.cur{background:rgba(124,199,255,.07)}
+tr.hrow td.cur{color:var(--tide)}
+.pill{display:inline-block;min-width:30px;padding:2px 6px;border-radius:6px;font-weight:500}
+.sub2{display:block;font-size:10px;color:var(--mut);margin-top:1px}
+.gauge{display:block;width:26px;height:3px;border-radius:2px;background:var(--line-2);margin:4px auto 0;overflow:hidden}
+.gauge u{display:block;height:100%;background:var(--tide)}
+.rainbar{display:block;width:14px;margin:0 auto;border-radius:2px 2px 0 0;background:var(--rain)}
+td svg.i{width:14px;height:14px;display:block;margin:0 auto}
+
+.wg{overflow-x:auto;border-radius:14px}
+.wg.dark{filter:invert(.92) hue-rotate(180deg) saturate(.9)}
+.fallback{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:var(--mut);font-size:13px}
+.foot{margin-top:28px;font-size:11px;color:var(--dim);line-height:1.6;max-width:820px}
+.foot a{color:var(--mut)}
+.err{color:var(--bad);font-size:13px}
+.skel{color:var(--dim);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="mark"><svg class="i" viewBox="0 0 24 24"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M7 9a5 5 0 0 1 10 0"/></svg></div>
+      <div><div class="name">Hatainville</div><div class="meta">Côte ouest du Cotentin</div></div>
+    </div>
+    <div class="status"><span class="pulse"></span><span id="clock" class="mono">—</span>
+      <button id="refresh" class="icon-btn" title="Actualiser" aria-label="Actualiser"><svg class="i" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button></div>
+  </header>
+
+  <nav class="days" id="days"></nav>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><div class="eyebrow" id="dayEyebrow">Marée &amp; conditions</div><h2 id="dayTitle">Chargement…</h2></div>
+      <div class="wins" id="wins"></div>
+    </div>
+    <div class="chart" id="chart"></div>
+    <div class="facts" id="facts"></div>
+  </section>
+
+  <div class="sec"><h3>En ce moment</h3><span id="upd" class="mono"></span></div>
+  <section class="panel"><div class="now" id="now"><div class="skel">Chargement des données…</div></div></section>
+
+  <div class="sec"><h3>Heure par heure</h3><span id="hourTitle"></span></div>
+  <section class="panel" style="padding:8px 0"><div class="tbl"><table id="hours"></table></div></section>
+
+  <div class="sec"><h3>Windguru</h3><a href="https://www.windguru.cz/48400" target="_blank" rel="noopener">Ouvrir le spot 48400 ↗</a></div>
+  <section class="panel" id="wgBox">
+    <div class="wg" id="wgWrap">
+    <script id="wg_fwdg_48400_100_hat">
+    (function (window, document) {
+      var loader = function () {
+        var arg = ["s=48400","m=100","mw=84","uid=wg_fwdg_48400_100_hat","wj=kmh","tj=c","waj=m","tij=cm","odh=0","do=0","dh=24","fhours=192","hrsm=1","vt=forecasts","lng=fr","idbs=1","p=WINDSPD,GUST,SMER,HTSGW,PERPW,DIRPW,TMPE,CDC,APCP1s,RATING"];
+        var script = document.createElement("script");
+        var tag = document.getElementsByTagName("script")[0];
+        script.src = "https://www.windguru.cz/js/widget.php?" + (arg.join("&"));
+        tag.parentNode.insertBefore(script, tag);
+        // widget affiché en sombre ; s'il n'a rien rendu après 10 s, on montre un lien à la place d'un cadre vide
+        setTimeout(function () {
+          var w = document.getElementById('wgWrap');
+          if ([].some.call(w.children, function (e) { return e.tagName !== 'SCRIPT'; })) w.classList.add('dark');
+          else w.insertAdjacentHTML('beforeend', '<div class="fallback"><span>Le widget Windguru ne s\'est pas chargé.</span><a href="https://www.windguru.cz/48400" target="_blank" rel="noopener">Voir les prévisions du spot ↗</a></div>');
+        }, 10000);
+      };
+      window.addEventListener ? window.addEventListener("load", loader, false) : window.attachEvent("onload", loader);
+    })(window, document);
+    </script>
+    </div>
+  </section>
+
+  <p class="foot">Vent et météo : Météo-France AROME / ARPEGE. Vagues et houle : Météo-France MFWAM. Données via Open-Meteo, actualisées toutes les 10 minutes.
+  Horaires de marée issus d'un modèle océanique, fiables à quelques dizaines de minutes ; hauteurs d'eau indicatives, exprimées par rapport au niveau moyen (0 m) — coefficients officiels sur <a href="https://maree.info/" target="_blank" rel="noopener">maree.info</a> (Carteret).
+  Bar : vent &lt; 10–15 km/h, ouest léger &gt; est, mer peu agitée, ±2 h autour de la basse mer, bonus aube et crépuscule. Surf : 1–2,3 m, période ≥ 10 s, vent d'est ou faible, houle d'ouest, mi-marée. Aucun score la nuit.</p>
+</div>
+
+<script>
+const LAT = 49.395, LON = -1.80, MLAT = 49.40, MLON = -1.86, TZ = 'Europe/Paris';
+const DAYS = 8;
+let H = [], TIDES = [], DAILY = [], CUR = null, sel = 0;
+
+const $ = id => document.getElementById(id);
+const interp = (x, pts) => {
+  if (x == null || isNaN(x)) return 0.5;
+  if (x <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+    return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+  }
+  return pts[pts.length - 1][1];
+};
+const angDiff = (a, b) => Math.abs(((a - b) % 360 + 540) % 360 - 180);
+const card16 = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+const compass = d => d == null ? '—' : card16[Math.round(d / 22.5) % 16];
+const r1 = v => v == null ? '—' : (Math.round(v * 10) / 10).toLocaleString('fr-FR');
+const r0 = v => v == null ? '—' : Math.round(v);
+const sgn = v => v == null ? '—' : (v > .05 ? '+' : v < -.05 ? '−' : '') + r1(Math.abs(v));
+const waveTone = h => h == null ? 'var(--mut)' : h < .5 ? '#a9b8c9' : h < 1 ? '#7cc7ff' : h < 2 ? '#5b9dff' : '#b69cff';
+// Open-Meteo renvoie l'heure locale sans offset : on la parse en "heure murale" via UTC
+const parseLocal = s => new Date(s + ':00Z');
+const nowLocal = () => { const p = new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit' }).format(new Date()); return new Date(p.replace(' ', 'T') + ':00Z'); };
+const hm = d => d.toISOString().slice(11, 16);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const tone = s => s >= 75 ? 'var(--good)' : s >= 55 ? 'var(--fair)' : s >= 40 ? 'var(--mid)' : 'var(--bad)';
+const verdict = s => s >= 75 ? 'Excellent' : s >= 55 ? 'Bon' : s >= 40 ? 'Moyen' : s >= 25 ? 'Faible' : 'Mauvais';
+const windTone = w => w == null ? 'var(--mut)' : w < 10 ? '#d6dbe3' : w < 16 ? '#7fe3c6' : w < 25 ? '#f2c46b' : '#ef7f7f';
+const dayLabel = (k, d, opts = { weekday: 'long', day: 'numeric', month: 'long' }) => k === 0 ? "Aujourd'hui" : k === 1 ? 'Demain' : d.toLocaleDateString('fr-FR', { ...opts, timeZone: 'UTC' });
+
+// Icônes vectorielles (trait fin, couleur héritée)
+const ICON = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  partly: '<path d="M8 3v1M3.5 5.5l.7.7M2 10h1M12.5 5.5l-.7.7"/><path d="M5.3 12.2A3 3 0 1 1 10.6 9"/><path d="M10 20h8a3.5 3.5 0 0 0 .4-6.97A5 5 0 0 0 9 13.2 3.4 3.4 0 0 0 10 20z"/>',
+  cloud: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.1 11.1 3.5 3.5 0 0 0 7 18z"/>',
+  fog: '<path d="M4 9h16M4 13h16M6 17h12"/>',
+  rain: '<path d="M7 14h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.1 7.1 3.5 3.5 0 0 0 7 14z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/>',
+  snow: '<path d="M7 14h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.1 7.1 3.5 3.5 0 0 0 7 14z"/><path d="M8 18h.01M12 20h.01M16 18h.01"/>',
+  storm: '<path d="M7 14h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.1 7.1 3.5 3.5 0 0 0 7 14z"/><path d="M12.5 15l-2 3.5h3l-2 3.5"/>',
+  sunrise: '<path d="M12 3v6M8.5 6.5 12 3l3.5 3.5M4 18h16M7 14a5 5 0 0 1 10 0"/>',
+  sunset: '<path d="M12 9V3M8.5 5.5 12 9l3.5-3.5M4 18h16M7 14a5 5 0 0 1 10 0"/>',
+  drop: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  wave: '<path d="M2 12c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 17c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/>',
+  up: '<path d="M7 17 17 7M9 7h8v8"/>', down: '<path d="M7 7l10 10M17 9v8H9"/>',
+};
+const icon = (n, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24">${ICON[n]}</svg>`;
+const wxIcon = (c, night) => icon(c == null ? 'cloud' : c === 0 ? (night ? 'moon' : 'sun') : c <= 2 ? (night ? 'moon' : 'partly') : c === 3 ? 'cloud' : c <= 48 ? 'fog' : c <= 67 || (c >= 80 && c <= 82) ? 'rain' : c <= 77 || c <= 86 ? 'snow' : 'storm');
+// flèche dans le sens où va le vent / la houle
+const arrow = (dir, color = 'currentColor', size = 14) => dir == null ? '' :
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="display:block;margin:0 auto;transform:rotate(${dir + 180}deg)"><path d="M12 3v18M6 9l6-6 6 6" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const dial = (dir, color) => `<svg class="dial" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,255,255,.1)"/>
+  <path d="M20 2.5v3" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
+  ${dir == null ? '' : `<g transform="rotate(${dir + 180} 20 20)"><path d="M20 9v22M15 14l5-5 5 5" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>`}</svg>`;
+
+async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + ' → ' + r.status); return r.json(); }
+
+async function load() {
+  $('refresh').classList.add('spin');
+  const wx = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&timezone=${encodeURIComponent(TZ)}&forecast_days=${DAYS + 1}&wind_speed_unit=kmh`
+    + `&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,cloud_cover,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,is_day`
+    + `&current=temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,is_day`
+    + `&daily=sunrise,sunset,temperature_2m_min,temperature_2m_max,weather_code,precipitation_sum`;
+  const mBase = `https://marine-api.open-meteo.com/v1/marine?latitude=${MLAT}&longitude=${MLON}&timezone=${encodeURIComponent(TZ)}&forecast_days=${DAYS + 1}`;
+  const mA = mBase + `&past_days=1&hourly=sea_level_height_msl,sea_surface_temperature,wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction`;
+  const mB = mBase + `&models=meteofrance_wave&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction`;
+  try {
+    const [W, A, B] = await Promise.all([getJSON(wx), getJSON(mA), getJSON(mB).catch(() => null)]);
+    build(W, A, B);
+    render();
+    $('upd').textContent = 'Mis à jour ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    $('now').innerHTML = `<div class="err">Impossible de charger les données — ${e.message}</div>`;
+    $('upd').textContent = 'Erreur';
+  }
+  $('refresh').classList.remove('spin');
+}
+
+function build(W, A, B) {
+  const mIdx = {}; A.hourly.time.forEach((t, i) => mIdx[t] = i);
+  const bIdx = {}; if (B) B.hourly.time.forEach((t, i) => bIdx[t] = i);
+  const pick = (k, t) => { const bi = bIdx[t]; const v = B && bi != null ? B.hourly[k]?.[bi] : null; return v ?? A.hourly[k]?.[mIdx[t]] ?? null; };
+  H = W.hourly.time.map((t, i) => ({
+    t, d: parseLocal(t), day: t.slice(0, 10),
+    temp: W.hourly.temperature_2m[i], feel: W.hourly.apparent_temperature[i],
+    rain: W.hourly.precipitation[i], rainP: W.hourly.precipitation_probability[i],
+    cloud: W.hourly.cloud_cover[i], code: W.hourly.weather_code[i], isDay: W.hourly.is_day[i],
+    ws: W.hourly.wind_speed_10m[i], wg: W.hourly.wind_gusts_10m[i], wd: W.hourly.wind_direction_10m[i],
+    hs: pick('wave_height', t), tp: pick('wave_period', t), dp: pick('wave_direction', t),
+    sh: pick('swell_wave_height', t), sp: pick('swell_wave_period', t), sd: pick('swell_wave_direction', t),
+    tide: A.hourly.sea_level_height_msl[mIdx[t]] ?? null, sst: A.hourly.sea_surface_temperature[mIdx[t]] ?? null,
+  }));
+  DAILY = W.daily.time.slice(0, DAYS).map((d, i) => ({
+    day: d, date: parseLocal(d + 'T00:00'), sunrise: parseLocal(W.daily.sunrise[i]), sunset: parseLocal(W.daily.sunset[i]),
+    tmin: W.daily.temperature_2m_min[i], tmax: W.daily.temperature_2m_max[i], code: W.daily.weather_code[i], rain: W.daily.precipitation_sum[i],
+  }));
+  CUR = W.current;
+
+  // Extrema de marée par interpolation parabolique (précision à la minute),
+  // calculés sur la série marine (qui inclut la veille) pour connaître la marée précédant minuit
+  TIDES = [];
+  const sl = A.hourly.sea_level_height_msl, st = A.hourly.time.map(parseLocal);
+  for (let i = 1; i < sl.length - 1; i++) {
+    const a = sl[i - 1], b = sl[i], c = sl[i + 1];
+    if (a == null || b == null || c == null) continue;
+    const hi = b >= a && b > c, lo = b <= a && b < c;
+    if (!hi && !lo) continue;
+    const den = a - 2 * b + c, off = den ? (a - c) / (2 * den) : 0;
+    TIDES.push({ type: hi ? 'PM' : 'BM', d: new Date(st[i].getTime() + off * 3600e3), h: b - (a - c) * off / 4 });
+  }
+
+  const dayInfo = Object.fromEntries(DAILY.map(x => [x.day, x]));
+  const lows = TIDES.filter(x => x.type === 'BM');
+  H.forEach(h => {
+    const di = dayInfo[h.day];
+    let nearest = null; lows.forEach(l => { if (!nearest || Math.abs(l.d - h.d) < Math.abs(nearest.d - h.d)) nearest = l; });
+    h.dtLow = nearest ? (h.d - nearest.d) / 3600e3 : null;
+    const prev = [...TIDES].reverse().find(x => x.d <= h.d), next = TIDES.find(x => x.d > h.d);
+    h.rising = prev ? prev.type === 'BM' : null;
+    // Position de la mer : heures par rapport à la marée la plus proche (BM+1, PM−2…)
+    const ref = prev && (!next || h.d - prev.d <= next.d - h.d) ? prev : next;
+    if (ref) { const dh = Math.round((h.d - ref.d) / 3600e3); h.tidePos = ref.type + (dh === 0 ? '' : dh > 0 ? '+' + dh : '−' + -dh); }
+    h.tideFrac = prev && next && prev.h !== next.h ? (h.tide - Math.min(prev.h, next.h)) / Math.abs(next.h - prev.h) : 0.5;
+    h.sunrise = di?.sunrise; h.sunset = di?.sunset;
+    h.daylight = di ? (h.d >= new Date(di.sunrise - 30 * 60e3) && h.d <= new Date(di.sunset.getTime() + 30 * 60e3)) : !!h.isDay;
+    fishScore(h); surfScore(h);
+  });
+}
+
+function fishScore(h) {
+  const ws = h.ws ?? 0;
+  let wind = interp(ws, [[0, 1], [10, 1], [15, .75], [20, .4], [25, .15], [35, 0]]);
+  if (h.wg > 30) wind *= .75;
+  const dFromW = h.wd == null ? 90 : angDiff(h.wd, 270);
+  const dirRaw = interp(dFromW, [[0, 1], [45, .9], [90, .6], [180, .25]]);
+  const dir = 1 - (1 - dirRaw) * Math.min(1, ws / 12); // direction compte peu par vent très faible
+  const wave = interp(h.hs, [[0, .7], [.3, .9], [.5, 1], [.9, 1], [1.3, .6], [1.8, .25], [2.5, .05]]);
+  const tide = interp(h.dtLow, [[-6.5, .15], [-3.5, .3], [-2.5, .7], [-1.5, 1], [2, 1], [3, .7], [4, .35], [6.5, .15]]);
+  // la marée module tout le reste : conditions parfaites à pleine mer ≈ 45, à basse mer ≈ 100
+  let s = 100 * (.45 * wind + .20 * dir + .35 * wave) * (.35 + .65 * tide);
+  const twilight = h.sunrise && (Math.abs(h.d - h.sunrise) < 1.6 * 3600e3 || Math.abs(h.d - h.sunset) < 1.6 * 3600e3);
+  if (twilight) s += 8;
+  if (h.rain > 2) s -= 8;
+  if (!h.daylight) s = 0; // pas de pêche de nuit
+  h.fish = Math.max(0, Math.min(100, Math.round(s)));
+  h.fishWhy = [
+    [`Vent ${r0(ws)} km/h ${compass(h.wd)}`, wind * .6 + dir * .4],
+    [`Mer ${r1(h.hs)} m`, wave],
+    [h.dtLow == null ? 'Marée inconnue' : Math.abs(h.dtLow) <= 2.2 ? (h.dtLow < 0 ? 'Fin de descendante' : 'Début de montante') : (h.rising ? 'Montante' : 'Descendante'), tide],
+    ...(twilight && h.daylight ? [['Aube / crépuscule', 1]] : []),
+  ];
+}
+
+function surfScore(h) {
+  const size = Math.max(h.sh ?? 0, (h.hs ?? 0) * .85);
+  const per = h.sp ?? h.tp;
+  const sz = interp(size, [[.3, 0], [.5, .2], [.8, .55], [1.2, .85], [1.5, 1], [2.3, 1], [3, .7], [4, .3]]);
+  const pr = interp(per, [[5, .05], [7, .35], [9, .65], [11, .9], [13, 1]]);
+  const ws = h.ws ?? 0, dOff = h.wd == null ? 90 : angDiff(h.wd, 90); // plage orientée ouest : offshore = vent d'est
+  const off = interp(dOff, [[0, 1], [60, .9], [100, .55], [140, .25], [180, 0]]);
+  let wind = ws < 6 ? 1 : off + (1 - off) * interp(ws, [[6, .9], [12, .4], [20, .1], [30, 0]]);
+  if (dOff < 90 && ws > 35) wind *= .7;
+  const sdir = interp(h.sd == null ? 30 : angDiff(h.sd ?? h.dp, 270), [[0, 1], [50, .9], [80, .5], [120, .1]]);
+  const tide = interp(h.tideFrac, [[0, .6], [.5, 1], [1, .65]]);
+  let s = 100 * (.30 * sz + .25 * pr + .30 * wind + .10 * sdir + .05 * tide);
+  if (sz < .2) s *= .4;
+  if (!h.daylight) s = 0;
+  h.surf = Math.round(Math.max(0, Math.min(100, s)));
+  const windTxt = dOff < 60 ? 'offshore' : dOff < 120 ? 'side-shore' : 'onshore';
+  h.surfWhy = [
+    [`Taille ${r1(size)} m`, sz], [`Période ${r0(per)} s`, pr],
+    [`Vent ${r0(ws)} km/h ${windTxt}`, wind], [`Houle ${compass(h.sd)}`, sdir],
+  ];
+}
+
+function bestWindow(hours, key) {
+  const valid = hours.filter(h => h[key] != null);
+  if (!valid.length) return null;
+  const max = Math.max(...valid.map(h => h[key]));
+  if (max < 40) return { max, from: null };
+  const thr = Math.max(40, max - 8);
+  let best = null, cur = null;
+  hours.forEach(h => {
+    if (h[key] >= thr) { cur = cur || { from: h, to: h, sum: 0 }; cur.to = h; cur.sum += h[key]; }
+    else { if (cur && (!best || cur.sum > best.sum)) best = cur; cur = null; }
+  });
+  if (cur && (!best || cur.sum > best.sum)) best = cur;
+  // borné au jour : lever − 30 min → coucher + 30 min
+  const sr = best.from.sunrise ? best.from.sunrise.getTime() - 30 * 60e3 : -Infinity, ss = best.to.sunset ? best.to.sunset.getTime() + 30 * 60e3 : Infinity;
+  return { max, from: new Date(Math.max(best.from.d.getTime(), sr)), to: new Date(Math.min(best.to.d.getTime() + 3600e3, ss)) };
+}
+
+function curHour() { const n = nowLocal(); return H.findIndex(h => h.d <= n && n - h.d < 3600e3); }
+const hoursOf = k => H.filter(x => x.day === DAILY[k].day);
+
+function render() { renderDays(); renderMain(); renderNow(); }
+
+function renderDays() {
+  $('days').innerHTML = DAILY.map((d, k) => {
+    const hrs = hoursOf(k), f = Math.max(...hrs.map(x => x.fish)), s = Math.max(...hrs.map(x => x.surf));
+    const name = k === 0 ? "Auj." : k === 1 ? 'Demain' : d.date.toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' }).replace('.', '');
+    return `<button class="day ${k === sel ? 'sel' : ''}" data-k="${k}">
+      <div class="top"><span class="dn">${name}</span>${wxIcon(d.code)}</div>
+      <div class="dd">${d.date.getUTCDate()}</div>
+      <div class="tt mono">${r0(d.tmin)}° · ${r0(d.tmax)}°</div>
+      <div class="mini"><span>Bar</span><i><u style="width:${f}%;background:var(--bass)"></u></i><b>${f}</b>
+        <span>Surf</span><i><u style="width:${s}%;background:var(--surf)"></u></i><b>${s}</b></div></button>`;
+  }).join('');
+  document.querySelectorAll('.day').forEach(b => b.onclick = () => { sel = +b.dataset.k; renderDays(); renderMain(); });
+}
+
+function renderMain() {
+  const D = DAILY[sel], hrs = hoursOf(sel);
+  $('dayEyebrow').textContent = sel === 0 ? "Aujourd'hui" : sel === 1 ? 'Demain' : 'Prévision';
+  $('dayTitle').textContent = D.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  $('hourTitle').textContent = $('dayTitle').textContent;
+  const bwF = bestWindow(hrs, 'fish'), bwS = bestWindow(hrs, 'surf');
+  const win = (bw, name, col) => `<div class="win"><div class="k"><i style="background:${col}"></i>${name}</div>`
+    + (bw?.from ? `<div class="v mono">${hm(bw.from)}–${hm(bw.to)}<small>${bw.max}</small></div>` : `<div class="v none">Pas de créneau</div>`) + `</div>`;
+  $('wins').innerHTML = win(bwF, 'Meilleur moment bar', 'var(--bass)') + win(bwS, 'Meilleur moment surf', 'var(--surf)');
+  $('chart').innerHTML = chartSvg(D, hrs, bwF, bwS);
+
+  const t0 = D.date, dayT = TIDES.filter(x => x.d >= t0 && x.d < new Date(t0.getTime() + 864e5));
+  const showers = []; let cur = null;
+  hrs.forEach(x => { if ((x.rain ?? 0) >= .1) { cur = cur || { from: x.d, mm: 0 }; cur.to = new Date(x.d.getTime() + 3600e3); cur.mm += x.rain; } else if (cur) { showers.push(cur); cur = null; } });
+  if (cur) showers.push(cur);
+  const fact = (ic, k, v) => `<div class="fact"><div class="k">${icon(ic)}${k}</div><div class="v mono">${v}</div></div>`;
+  $('facts').innerHTML = fact('sunrise', 'Lever', hm(D.sunrise)) + fact('sunset', 'Coucher', hm(D.sunset))
+    + fact('down', 'Basse mer', dayT.filter(x => x.type === 'BM').map(x => hm(x.d)).join(' <small>·</small> ') || '—')
+    + fact('up', 'Pleine mer', dayT.filter(x => x.type === 'PM').map(x => hm(x.d)).join(' <small>·</small> ') || '—')
+    + fact('drop', 'Pluie', showers.length ? showers.map(r => `${hm(r.from)}–${hm(r.to)} <small>${r1(r.mm)} mm</small>`).join(' <small>·</small> ') : 'Sec')
+    + fact('wave', 'Eau', `${r1(hrs[12]?.sst)}°`);
+  renderTable(hrs);
+}
+
+function chartSvg(D, hrs, bwF, bwS) {
+  const W = 1000, L = 62, R = 14, CT = 54, CB = 232, Ht = 470;
+  const all = H.map(x => x.tide).filter(v => v != null), mn = Math.min(...all), mx = Math.max(...all);
+  const X = t => L + (W - L - R) * Math.max(0, Math.min(24, t)) / 24, Y = v => CB - (CB - CT) * (v - mn) / (mx - mn);
+  const t0 = D.date, hOf = d => (d - t0) / 3600e3, cw = X(1) - X(0);
+  const BASS = css('--bass'), SURF = css('--surf'), TIDE = css('--tide'), RAIN = css('--rain'), SUN = css('--sun');
+
+  // courbe de marée lissée (Catmull-Rom → Bézier)
+  const pts = hrs.map((x, k) => [X(k), Y(x.tide)]);
+  const nxt = H[H.indexOf(hrs[hrs.length - 1]) + 1]; if (nxt) pts.push([X(24), Y(nxt.tide)]);
+  let path = `M${pts[0][0]},${pts[0][1]}`;
+  for (let k = 0; k < pts.length - 1; k++) {
+    const p0 = pts[k - 1] || pts[k], p1 = pts[k], p2 = pts[k + 1], p3 = pts[k + 2] || p2;
+    path += ` C${p1[0] + (p2[0] - p0[0]) / 6},${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6},${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]},${p2[1]}`;
+  }
+
+  const sr = hOf(D.sunrise), ss = hOf(D.sunset);
+  const dayBg = `<rect x="${X(sr)}" y="30" width="${X(ss) - X(sr)}" height="${Ht - 30}" rx="10" fill="rgba(255,255,255,.028)"/>`;
+  const grid = [0, 3, 6, 9, 12, 15, 18, 21, 24].map(t => `<line x1="${X(t)}" x2="${X(t)}" y1="${CT - 10}" y2="${CB}" stroke="rgba(255,255,255,.04)"/>
+    <text x="${X(t)}" y="${CB + 22}" font-size="11" fill="${css('--dim')}" text-anchor="middle">${String(t).padStart(2, '0')}h</text>`).join('');
+  const band = (bw, col) => bw?.from ? `<rect x="${X(hOf(bw.from))}" y="${CT - 12}" width="${X(hOf(bw.to)) - X(hOf(bw.from))}" height="${CB - CT + 12}" fill="${col}" opacity=".07"/>
+    <rect x="${X(hOf(bw.from))}" y="${CT - 12}" width="${X(hOf(bw.to)) - X(hOf(bw.from))}" height="2" rx="1" fill="${col}"/>` : '';
+  const sun = [[sr, 'Lever', D.sunrise, 'end', -6], [ss, 'Coucher', D.sunset, 'start', 6]].map(([t, n, d, a, dx]) => `
+    <line x1="${X(t)}" x2="${X(t)}" y1="30" y2="${Ht}" stroke="${SUN}" stroke-opacity=".45" stroke-dasharray="2 4"/>
+    <text x="${X(t) + dx}" y="22" font-size="11" text-anchor="${a}"><tspan fill="${css('--mut')}" class="s">${n} </tspan><tspan fill="${SUN}">${hm(d)}</tspan></text>`).join('');
+
+  const dayT = TIDES.filter(x => x.d >= t0 && x.d < new Date(t0.getTime() + 864e5));
+  const marks = dayT.map(x => {
+    const tx = X(hOf(x.d)), ty = Y(x.h), lx = Math.max(L + 52, Math.min(W - R - 52, tx)), hi = x.type === 'PM';
+    return `<circle cx="${tx}" cy="${ty}" r="4" fill="${css('--surface')}" stroke="${TIDE}" stroke-width="2"/>
+      <text x="${lx}" y="${ty - 24}" font-size="10" paint-order="stroke" stroke="${css('--surface')}" stroke-width="4" stroke-linejoin="round" fill="${css('--mut')}" text-anchor="middle" class="s">${hi ? 'Pleine mer' : 'Basse mer'} · ${sgn(x.h)} m</text>
+      <text x="${lx}" y="${ty - 10}" font-size="12" paint-order="stroke" stroke="${css('--surface')}" stroke-width="4" stroke-linejoin="round" font-weight="500" fill="${css('--txt')}" text-anchor="middle">${hm(x.d)}</text>`;
+  }).join('');
+
+  // axe hauteur d'eau (m, par rapport au niveau moyen)
+  const step = mx - mn > 6 ? 2 : 1, yTicks = [];
+  for (let v = Math.ceil(mn / step) * step; v <= mx; v += step) yTicks.push(v);
+  const yAxis = yTicks.map(v => `<line x1="${X(0)}" x2="${X(24)}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,${v === 0 ? .1 : .04})" ${v === 0 ? '' : 'stroke-dasharray="2 5"'}/>
+    <text x="${L - 10}" y="${Y(v) + 4}" font-size="10" fill="${css('--dim')}" text-anchor="end">${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)} m</text>`).join('');
+
+  const label = (y, txt, col) => `<text x="0" y="${y}" font-size="12" fill="${css('--mut')}" class="s" dominant-baseline="middle">${col ? `<tspan fill="${col}">●</tspan> ` : ''}${txt}</text>`;
+  const nowT = H[curHour()]?.t;
+
+  // vent : flèche + km/h
+  const WY = 282;
+  const wind = label(WY + 6, 'Vent') + hrs.map((x, k) => {
+    const cx = X(k) + cw / 2, c = windTone(x.ws);
+    return (x.t === nowT ? `<rect x="${X(k) + 2}" y="${WY - 18}" width="${cw - 4}" height="48" rx="8" fill="rgba(124,199,255,.1)"/>` : '')
+      + (x.wd != null ? `<g transform="translate(${cx},${WY - 2}) rotate(${x.wd + 180})"><path d="M0,-8 V8 M-5,-3 L0,-8 L5,-3" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>` : '')
+      + `<text x="${cx}" y="${WY + 22}" font-size="11" fill="${c}" text-anchor="middle" opacity="${x.daylight ? 1 : .55}">${r0(x.ws)}</text>`;
+  }).join('');
+
+  // vagues : hauteur (m) + période (s)
+  const VY = 336;
+  const waves = label(VY + 2, 'Vagues') + hrs.map((x, k) => {
+    const cx = X(k) + cw / 2;
+    return `<text x="${cx}" y="${VY + 4}" font-size="11" font-weight="500" fill="${waveTone(x.hs)}" text-anchor="middle" opacity="${x.daylight ? 1 : .55}">${r1(x.hs)}</text>
+      <text x="${cx}" y="${VY + 18}" font-size="9" fill="${css('--dim')}" text-anchor="middle">${r0(x.tp)}s</text>`;
+  }).join('');
+
+  // couloirs bar / surf : intensité = score, meilleur créneau encadré
+  const lane = (y, key, bw, col, name) => label(y + 7, name, col)
+    + `<rect x="${X(0)}" y="${y + 6}" width="${X(24) - X(0)}" height="1" fill="rgba(255,255,255,.06)"/>`
+    + hrs.map((x, k) => x.daylight && x[key] > 0 ? `<rect x="${X(k) + 1}" y="${y}" width="${cw - 2}" height="14" rx="4" fill="${col}" opacity="${(.06 + .55 * Math.pow(x[key] / 100, 2)).toFixed(2)}"/>` : '').join('')
+    + (bw?.from ? (() => {
+      const x1 = X(hOf(bw.from)), x2 = X(hOf(bw.to)), txt = `${hm(bw.from)}–${hm(bw.to)}`, tw = txt.length * 6.8 + 26;
+      const pill = `<rect x="${x1 + 1}" y="${y - 1}" width="${x2 - x1 - 2}" height="16" rx="5" fill="${col}"/>`;
+      if (x2 - x1 >= tw) return pill + `<text x="${(x1 + x2) / 2}" y="${y + 11}" font-size="11" font-weight="500" fill="#06121f" text-anchor="middle">${txt} · ${bw.max}</text>`;
+      const right = x2 + tw + 8 < W - R;
+      return pill + `<text x="${right ? x2 + 8 : x1 - 8}" y="${y + 11}" font-size="11" text-anchor="${right ? 'start' : 'end'}" paint-order="stroke" stroke="${css('--surface')}" stroke-width="4"><tspan fill="${col}">${txt}</tspan><tspan fill="${css('--mut')}"> ${bw.max}</tspan></text>`;
+    })() : `<text x="${X(0) + 4}" y="${y + 11}" font-size="11" fill="${css('--dim')}" class="s">Pas de bon créneau</text>`);
+
+  // pluie : barres mm/h, fond = probabilité
+  const RY = 414, RH = 38, rmax = Math.max(3, ...hrs.map(x => x.rain ?? 0));
+  const rain = label(RY + RH - 10, 'Pluie') + `<rect x="${X(0)}" y="${RY + RH}" width="${X(24) - X(0)}" height="1" fill="rgba(255,255,255,.06)"/>`
+    + hrs.map((x, k) => {
+      const p = (x.rainP ?? 0) / 100, mm = x.rain ?? 0, bh = mm > 0 ? Math.max(2, RH * mm / rmax) : 0;
+      return (p > .05 ? `<rect x="${X(k) + 3}" y="${RY + RH - RH * p}" width="${cw - 6}" height="${RH * p}" rx="3" fill="${RAIN}" opacity=".08"/>` : '')
+        + (bh ? `<rect x="${X(k) + 6}" y="${RY + RH - bh}" width="${cw - 12}" height="${bh}" rx="2" fill="${RAIN}"/>` : '')
+        + (mm >= .2 ? `<text x="${X(k) + cw / 2}" y="${RY + RH - bh - 4}" font-size="9" fill="${RAIN}" text-anchor="middle">${r1(mm)}</text>` : '');
+    }).join('');
+
+  const n = nowLocal(), nowX = sel === 0 ? X(hOf(n)) : null;
+  const now = nowX == null ? '' : `<line x1="${nowX}" x2="${nowX}" y1="34" y2="${Ht}" stroke="${TIDE}" stroke-width="1.25"/>
+    <rect x="${nowX - 22}" y="${CT - 30}" width="44" height="17" rx="8.5" fill="${TIDE}"/>
+    <text x="${nowX}" y="${CT - 18}" font-size="10" font-weight="500" fill="#06121f" text-anchor="middle">${hm(n)}</text>`;
+
+  return `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Marée, vent, créneaux et pluie">
+    <defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${TIDE}" stop-opacity=".22"/><stop offset="1" stop-color="${TIDE}" stop-opacity="0"/></linearGradient></defs>
+    ${dayBg}${grid}${yAxis}${band(bwF, BASS)}${band(bwS, SURF)}
+    <path d="${path} L${X(24)},${CB} L${X(0)},${CB} Z" fill="url(#tg)"/>
+    <path d="${path}" stroke="${TIDE}" stroke-width="2" fill="none" stroke-linecap="round"/>
+    ${marks}${sun}${wind}${waves}${lane(366, 'fish', bwF, BASS, 'Bar')}${lane(390, 'surf', bwS, SURF, 'Surf')}${rain}${now}</svg>`;
+}
+
+function renderNow() {
+  const i = Math.max(0, curHour()), h = H[i], c = CUR, n = nowLocal();
+  const nextT = TIDES.find(x => x.d > n);
+  const dayName = d => d.toLocaleDateString('fr-FR', { weekday: 'long', timeZone: 'UTC' });
+
+  const score = (title, col, key, whyKey) => {
+    // prochain bon créneau à partir de maintenant (aujourd'hui, sinon les jours suivants)
+    const from = new Date(n - 3600e3);
+    let next = null, nk = 0;
+    for (let k = 0; k < DAILY.length && !next; k++) { const w = bestWindow(H.filter(x => x.day === DAILY[k].day && x.d >= from), key); if (w?.from) { next = w; nk = k; } }
+    let top = null; DAILY.forEach((d, k) => { const w = bestWindow(hoursOf(k), key); if (w?.from && (!top || w.max > top.max)) top = w; });
+    const s = h[key], night = !h.daylight;
+    return `<div>
+      <div class="s-head"><i style="background:${col}"></i>${title}</div>
+      <div class="s-main"><span class="s-num mono" style="color:${night ? 'var(--dim)' : tone(s)}">${night ? '—' : s}</span>
+        <span class="s-verdict" style="color:${night ? 'var(--mut)' : tone(s)}">${night ? 'Nuit' : verdict(s)}</span></div>
+      <div class="s-track"><i style="width:${night ? 0 : s}%;background:${tone(s)}"></i></div>
+      <div class="kv"><span class="k">Prochain créneau</span><span class="v mono">${next ? `${nk === 0 ? "Auj." : nk === 1 ? 'Demain' : dayName(next.from)} ${hm(next.from)}–${hm(next.to)}` : '—'}</span></div>
+      <div class="kv"><span class="k">Top 8 jours</span><span class="v mono">${top ? `${dayName(top.from)} ${hm(top.from)} · ${top.max}` : '—'}</span></div>
+      <ul class="why">${h[whyKey].map(([t, v]) => `<li><i style="background:${v >= .75 ? 'var(--good)' : v >= .45 ? 'var(--mid)' : 'var(--bad)'}"></i>${t}</li>`).join('')}</ul>
+    </div>`;
+  };
+
+  const m = (k, v, unit, sub, extra = '') => `<div class="m"><div class="k">${k}</div><div class="row"><div class="v mono">${v}<small>${unit}</small></div>${extra}</div><div class="sub">${sub}</div></div>`;
+  $('now').innerHTML = score('Pêche au bar', 'var(--bass)', 'fish', 'fishWhy') + score('Surf', 'var(--surf)', 'surf', 'surfWhy')
+    + `<div class="metrics">
+      ${m('Vent', r0(c.wind_speed_10m), 'km/h', `Rafales ${r0(c.wind_gusts_10m)} · ${compass(c.wind_direction_10m)} ${r0(c.wind_direction_10m)}°`, dial(c.wind_direction_10m, windTone(c.wind_speed_10m)))}
+      ${m('Vagues', r1(h.hs), 'm', `${r1(h.tp)} s · ${compass(h.dp)}`, dial(h.dp, css('--tide')))}
+      ${m('Houle', r1(h.sh), 'm', `${r1(h.sp)} s · ${compass(h.sd)}`, dial(h.sd, css('--surf')))}
+      ${m('Marée', h.rising ? 'Montante' : 'Descendante', '', `Hauteur ${sgn(h.tide)} m` + (nextT ? ` · ${nextT.type === 'PM' ? 'PM' : 'BM'} ${hm(nextT.d)}` : ''), `<span style="color:var(--tide)">${icon(h.rising ? 'up' : 'down')}</span>`).replace('class="v mono"', 'class="v" style="font-size:20px;letter-spacing:-.02em"')}
+      ${m('Air · eau', `${r0(c.temperature_2m)}°`, ` / ${r1(h.sst)}°`, `Ressenti ${r0(c.apparent_temperature)}° · ${r0(c.pressure_msl)} hPa`)}
+      ${m('Ciel', r1(c.precipitation), 'mm', `Pluie ${r0(h.rainP)} % · nuages ${r0(h.cloud)} %`, `<span style="color:var(--mut)">${wxIcon(c.weather_code, !c.is_day).replace('class="i"', 'class="i" style="width:30px;height:30px;stroke-width:1.3"')}</span>`)}
+    </div>`;
+}
+
+function renderTable(hrs) {
+  const nowT = H[curHour()]?.t;
+  const cls = x => [x.t === nowT ? 'cur' : '', x.daylight ? '' : 'night'].join(' ');
+  const cell = (x, inner) => `<td class="${cls(x)}">${inner}</td>`;
+  const row = (name, f, c = '') => `<tr class="${c}"><th>${name}</th>${hrs.map(f).join('')}</tr>`;
+  const tint = (col, a) => `background:color-mix(in srgb, ${col} ${a}%, transparent);color:${col}`;
+  const rmax = Math.max(2, ...hrs.map(x => x.rain ?? 0));
+  const scoreCell = (x, key) => x.daylight ? cell(x, `<span class="pill" style="${tint(tone(x[key]), 16)}">${x[key]}</span>`) : cell(x, '<span style="color:var(--dim)">·</span>');
+  $('hours').innerHTML = [
+    row('', x => cell(x, x.t.slice(11, 13)), 'hrow'),
+    row('Ciel', x => cell(x, `<span style="color:var(--mut)">${wxIcon(x.code, !x.isDay)}</span>`)),
+    row('Vent km/h', x => cell(x, `<span class="pill" style="${tint(windTone(x.ws), 14)}">${r0(x.ws)}</span>`)),
+    row('Rafales', x => cell(x, `<span style="color:${windTone(x.wg)}">${r0(x.wg)}</span>`)),
+    row('Direction', x => cell(x, arrow(x.wd, windTone(x.ws)) + `<span class="sub2">${compass(x.wd)}</span>`)),
+    row('Vagues m', x => cell(x, `<span class="pill" style="${tint('#7cc7ff', Math.round(6 + Math.min(1, (x.hs ?? 0) / 2.5) * 30))}">${r1(x.hs)}</span>`)),
+    row('Période s', x => cell(x, r1(x.tp))),
+    row('Houle', x => cell(x, `${r1(x.sh)}<span class="sub2">${r0(x.sp)} s</span>`)),
+    row('Dir. houle', x => cell(x, arrow(x.sd, '#b69cff'))),
+    row('Position mer', x => cell(x, `<span style="color:${x.tidePos?.startsWith('BM') ? '#f2c46b' : '#7cc7ff'}">${x.tidePos ?? '—'}</span><span class="gauge"><u style="width:${Math.round(Math.max(0, Math.min(1, x.tideFrac ?? .5)) * 100)}%"></u></span>`)),
+    row('Hauteur eau', x => cell(x, `<span style="color:var(--tide)">${sgn(x.tide)}</span>`)),
+    row('Temp. °C', x => cell(x, r0(x.temp))),
+    row('Pluie mm', x => cell(x, x.rain ? `<span class="rainbar" style="height:${Math.max(2, 18 * x.rain / rmax)}px"></span><span class="sub2" style="color:var(--rain)">${r1(x.rain)}</span>` : '')),
+    row('<span style="color:var(--bass)">●</span> Bar', x => scoreCell(x, 'fish')),
+    row('<span style="color:var(--surf)">●</span> Surf', x => scoreCell(x, 'surf')),
+  ].join('');
+}
+
+const tick = () => { $('clock').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TZ }); };
+tick(); setInterval(tick, 1000);
+setInterval(load, 10 * 60e3);
+$('refresh').onclick = load;
+load();
+</script>
+</body>
+</html>
