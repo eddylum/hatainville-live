@@ -70,8 +70,12 @@ h2::first-letter{text-transform:uppercase}
 .win .v{font-size:18px;font-weight:500;margin-top:2px}
 .win .v small{font-size:12px;color:var(--mut);margin-left:6px;font-weight:400}
 .win .v.none{color:var(--dim);font-size:14px;font-weight:400;padding-top:3px}
-.chart{overflow-x:auto;margin:0 -6px;scrollbar-width:thin}
-.chart svg{display:block;width:100%;min-width:760px;height:auto}
+.chart{display:grid;grid-template-columns:auto 1fr;margin:0 -6px}
+.chart .gut{display:block}
+.chart .scroll{overflow-x:auto;scrollbar-width:none;min-width:0}
+.chart .scroll::-webkit-scrollbar{display:none}
+.chart .main{display:block;width:100%;height:auto}
+@media(max-width:700px){.chart{margin:0 -10px 0 -8px}.chart .main{width:1000px}}
 .chart text{font-family:var(--sans);font-variant-numeric:tabular-nums}
 .facts{display:flex;flex-wrap:wrap;margin-top:20px;border-top:1px solid var(--line);padding-top:16px;row-gap:14px}
 .fact{padding:0 22px;border-left:1px solid var(--line)}
@@ -80,7 +84,7 @@ h2::first-letter{text-transform:uppercase}
 .fact .k svg{width:13px;height:13px}
 .fact .v{font-size:15px;font-weight:500;margin-top:2px}
 .fact .v small{color:var(--mut);font-weight:400;font-size:12px}
-@media(max-width:640px){.fact{padding:0 14px}}
+@media(max-width:640px){.facts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 12px}.fact{padding:0;border:0}.wins{gap:22px}.win .v{font-size:16px;white-space:nowrap}}
 
 .sec{display:flex;justify-content:space-between;align-items:baseline;margin:44px 0 14px;gap:12px}
 .sec h3{font-size:15px;font-weight:500;letter-spacing:-.01em}
@@ -419,8 +423,14 @@ function renderMain() {
   const bwF = bestWindow(hrs, 'fish'), bwS = bestWindow(hrs, 'surf');
   const win = (bw, name, col) => `<div class="win"><div class="k"><i style="background:${col}"></i>${name}</div>`
     + (bw?.from ? `<div class="v mono">${hm(bw.from)}–${hm(bw.to)}<small>${bw.max}</small></div>` : `<div class="v none">Pas de créneau</div>`) + `</div>`;
-  $('wins').innerHTML = win(bwF, 'Meilleur moment bar', 'var(--bass)') + win(bwS, 'Meilleur moment surf', 'var(--surf)');
-  $('chart').innerHTML = chartSvg(D, hrs, bwF, bwS);
+  $('wins').innerHTML = win(bwF, 'Créneau bar', 'var(--bass)') + win(bwS, 'Créneau surf', 'var(--surf)');
+  // même dessin affiché deux fois : une gouttière fixe (intitulés, axe) et la zone horaire qui défile sur mobile
+  const { body, L, W, Ht, focus } = chartSvg(D, hrs, bwF, bwS);
+  $('chart').innerHTML = `<svg class="gut" viewBox="0 0 ${L} ${Ht}">${body}</svg>
+    <div class="scroll"><svg class="main" viewBox="${L} 0 ${W - L} ${Ht}" role="img" aria-label="Marée, vent, vagues, créneaux et pluie">${body}</svg></div>`;
+  const sc = $('chart').querySelector('.scroll'), mainSvg = sc.firstElementChild;
+  fitGutter();
+  if (sc.scrollWidth > sc.clientWidth) sc.scrollLeft = Math.max(0, (focus - L) * mainSvg.clientWidth / (W - L) - 24);
 
   const t0 = D.date, dayT = TIDES.filter(x => x.d >= t0 && x.d < new Date(t0.getTime() + 864e5));
   const showers = []; let cur = null;
@@ -434,6 +444,16 @@ function renderMain() {
     + fact('wave', 'Eau', `${r1(hrs[12]?.sst)}°`);
   renderTable(hrs);
 }
+
+// la gouttière prend exactement l'échelle de la zone horaire pour que les intitulés restent alignés
+function fitGutter() {
+  const g = document.querySelector('.chart .gut'), m = document.querySelector('.chart .main');
+  if (!g || !m) return;
+  const [, , gw, gh] = g.viewBox.baseVal ? [0, 0, g.viewBox.baseVal.width, g.viewBox.baseVal.height] : [];
+  const k = m.getBoundingClientRect().height / gh;
+  g.style.width = gw * k + 'px'; g.style.height = gh * k + 'px';
+}
+addEventListener('resize', fitGutter);
 
 function chartSvg(D, hrs, bwF, bwS) {
   const W = 1000, L = 62, R = 14, CT = 54, CB = 232, Ht = 470;
@@ -475,7 +495,7 @@ function chartSvg(D, hrs, bwF, bwS) {
   const yAxis = yTicks.map(v => `<line x1="${X(0)}" x2="${X(24)}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,${v === 0 ? .1 : .04})" ${v === 0 ? '' : 'stroke-dasharray="2 5"'}/>
     <text x="${L - 10}" y="${Y(v) + 4}" font-size="10" fill="${css('--dim')}" text-anchor="end">${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)} m</text>`).join('');
 
-  const label = (y, txt, col) => `<text x="0" y="${y}" font-size="12" fill="${css('--mut')}" class="s" dominant-baseline="middle">${col ? `<tspan fill="${col}">●</tspan> ` : ''}${txt}</text>`;
+  const label = (y, txt, col) => `<text x="6" y="${y}" font-size="12" fill="${css('--mut')}" class="s" dominant-baseline="middle">${col ? `<tspan fill="${col}">●</tspan> ` : ''}${txt}</text>`;
   const nowT = H[curHour()]?.t;
 
   // vent : flèche + km/h
@@ -522,12 +542,14 @@ function chartSvg(D, hrs, bwF, bwS) {
     <rect x="${nowX - 22}" y="${CT - 30}" width="44" height="17" rx="8.5" fill="${TIDE}"/>
     <text x="${nowX}" y="${CT - 18}" font-size="10" font-weight="500" fill="#06121f" text-anchor="middle">${hm(n)}</text>`;
 
-  return `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Marée, vent, créneaux et pluie">
-    <defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${TIDE}" stop-opacity=".22"/><stop offset="1" stop-color="${TIDE}" stop-opacity="0"/></linearGradient></defs>
+  // sur mobile on fait défiler jusqu'à maintenant (aujourd'hui) ou au lever du soleil
+  const focus = nowX != null ? Math.max(X(sr), nowX - 140) : X(sr);
+  const body = `<defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${TIDE}" stop-opacity=".22"/><stop offset="1" stop-color="${TIDE}" stop-opacity="0"/></linearGradient></defs>
     ${dayBg}${grid}${yAxis}${band(bwF, BASS)}${band(bwS, SURF)}
     <path d="${path} L${X(24)},${CB} L${X(0)},${CB} Z" fill="url(#tg)"/>
     <path d="${path}" stroke="${TIDE}" stroke-width="2" fill="none" stroke-linecap="round"/>
-    ${marks}${sun}${wind}${waves}${lane(366, 'fish', bwF, BASS, 'Bar')}${lane(390, 'surf', bwS, SURF, 'Surf')}${rain}${now}</svg>`;
+    ${marks}${sun}${wind}${waves}${lane(366, 'fish', bwF, BASS, 'Bar')}${lane(390, 'surf', bwS, SURF, 'Surf')}${rain}${now}`;
+  return { body, L, W, Ht, focus };
 }
 
 function renderNow() {
