@@ -51,7 +51,9 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 .day .dn{font-size:12px;text-transform:capitalize}
 .day.sel .dn{color:var(--txt)}
 .day .dd{font-size:22px;font-weight:500;letter-spacing:-.02em;margin:2px 0 6px}
-.day .tt{font-size:11px;color:var(--mut);margin-bottom:10px}
+.day .tt{font-size:11px;color:var(--mut);margin-bottom:4px}
+.day .cf{font-size:11px;color:var(--mut);margin-bottom:10px}
+.day .cf b{color:var(--tide);font-weight:500}
 .mini{display:grid;grid-template-columns:auto 1fr auto;gap:4px 6px;align-items:center;font-size:10px;color:var(--mut)}
 .mini i{height:3px;border-radius:2px;background:var(--line-2);overflow:hidden;display:block}
 .mini i u{display:block;height:100%;border-radius:2px}
@@ -198,8 +200,9 @@ td svg.i{width:14px;height:14px;display:block;margin:0 auto}
   </section>
 
   <p class="foot">Vent et météo : Météo-France AROME / ARPEGE. Vagues et houle : Météo-France MFWAM. Données via Open-Meteo, actualisées toutes les 10 minutes.
-  Marée : modèle océanique calé sur les prédictions SHOM de Carteret (horaires à ±15 min, hauteurs à ±0,3 m environ), hauteurs en mètres au-dessus du zéro des cartes comme dans les annuaires — horaires et coefficients officiels sur <a href="https://maree.info/" target="_blank" rel="noopener">maree.info</a> (Carteret).
-  Bar : vent &lt; 10–15 km/h, ouest léger &gt; est, mer peu agitée, ±2 h autour de la basse mer, bonus aube et crépuscule. Surf : 1–2,3 m, période ≥ 10 s, vent d'est ou faible, houle d'ouest, mi-marée. Aucun score la nuit.</p>
+  Marée : modèle océanique calé sur les prédictions SHOM de Carteret (horaires à ±15 min, hauteurs à ±0,3 m environ), hauteurs en mètres au-dessus du zéro des cartes comme dans les annuaires ; coefficient estimé d'après le marnage (±2 à 5 points) — horaires et coefficients officiels sur <a href="https://maree.info/" target="_blank" rel="noopener">maree.info</a> (Carteret).
+  Bar : conditions seules (vent &lt; 10–15 km/h, ouest léger &gt; est, mer peu agitée, bonus aube et crépuscule, malus forte pluie), sans tenir compte de la marée. Surf : 1–2,3 m, période ≥ 10 s, vent d'est ou faible, houle d'ouest, mi-marée. Aucun score la nuit.
+  Premières lueurs / nuit noire : soleil à 18° sous l'horizon (fin et début du crépuscule astronomique) ; sur le schéma, le fond s'éclaircit par paliers aux crépuscules nautique (−12°) et civil (−6°). Nuages : couverture totale en %, « couvert » au-delà de 85 %.</p>
 </div>
 
 <script>
@@ -208,6 +211,10 @@ const DAYS = 8;
 // Calage du modèle Open-Meteo sur les marées officielles SHOM de Carteret :
 // hauteur au-dessus du zéro des cartes = 1,036 × niveau modèle + 6,03 m ; le modèle est en avance (≈ 25 min à PM, 42 min à BM)
 const TIDE_K = 1.036, TIDE_Z0 = 6.03, TIDE_LAG = { PM: 25, BM: 42 }, TIDE_LAG_MEAN = 34;
+// coefficient estimé depuis le marnage (PM − moyenne des BM voisines), calé sur les coefficients officiels de novembre 2026 (écart ≈ ±2)
+const coefOf = range => Math.round(Math.max(20, Math.min(120, 8.61 * range + 8)));
+const coefTxt = c => c >= 95 ? 'grande marée' : c >= 70 ? 'vive-eau' : c <= 45 ? 'morte-eau' : 'moyenne';
+const dayCoefs = day => TIDES.filter(x => x.coef && x.day === day).map(x => x.coef);
 let H = [], TIDES = [], DAILY = [], CUR = null, sel = 0;
 
 const $ = id => document.getElementById(id);
@@ -230,6 +237,21 @@ const waveTone = h => h == null ? 'var(--mut)' : h < .5 ? '#a9b8c9' : h < 1 ? '#
 const parseLocal = s => new Date(s + ':00Z');
 const nowLocal = () => { const p = new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit' }).format(new Date()); return new Date(p.replace(' ', 'T') + ':00Z'); };
 const hm = d => d.toISOString().slice(11, 16);
+// date UTC réelle → "heure murale" de Paris (même convention que parseLocal)
+const wall = d => new Date(new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit' }).format(d).replace(' ', 'T') + ':00Z');
+// passage du soleil à l'altitude h0 (°) : algorithme NOAA simplifié, précis à la minute ; null si le soleil n'y descend pas
+const RAD = Math.PI / 180;
+function sunAt(day, h0) {
+  const n = Math.round(Date.parse(day + 'T12:00:00Z') / 864e5 + 2440587.5 - 2451545 + .0008);
+  const J = n - LON / 360, M = (357.5291 + .98560028 * J) % 360;
+  const C = 1.9148 * Math.sin(M * RAD) + .02 * Math.sin(2 * M * RAD) + .0003 * Math.sin(3 * M * RAD);
+  const lam = (M + C + 282.9372) % 360, Jt = 2451545 + J + .0053 * Math.sin(M * RAD) - .0069 * Math.sin(2 * lam * RAD);
+  const sd = Math.sin(lam * RAD) * Math.sin(23.4397 * RAD), cd = Math.cos(Math.asin(sd));
+  const cw = (Math.sin(h0 * RAD) - Math.sin(LAT * RAD) * sd) / (Math.cos(LAT * RAD) * cd);
+  if (cw < -1 || cw > 1) return null;
+  const w = Math.acos(cw) / RAD / 360, toD = j => wall(new Date((j - 2440587.5) * 864e5));
+  return { rise: toD(Jt - w), set: toD(Jt + w) };
+}
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const tone = s => s >= 75 ? 'var(--good)' : s >= 55 ? 'var(--fair)' : s >= 40 ? 'var(--mid)' : 'var(--bad)';
 const verdict = s => s >= 75 ? 'Excellent' : s >= 55 ? 'Bon' : s >= 40 ? 'Moyen' : s >= 25 ? 'Faible' : 'Mauvais';
@@ -252,6 +274,7 @@ const ICON = {
   wave: '<path d="M2 12c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 17c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/>',
   up: '<path d="M7 17 17 7M9 7h8v8"/>', down: '<path d="M7 7l10 10M17 9v8H9"/>',
 };
+const skyTxt = c => c == null ? '' : c < 20 ? 'clair' : c < 50 ? 'peu nuag.' : c < 85 ? 'nuageux' : 'couvert';
 const icon = (n, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24">${ICON[n]}</svg>`;
 const wxIcon = (c, night) => icon(c == null ? 'cloud' : c === 0 ? (night ? 'moon' : 'sun') : c <= 2 ? (night ? 'moon' : 'partly') : c === 3 ? 'cloud' : c <= 48 ? 'fog' : c <= 67 || (c >= 80 && c <= 82) ? 'rain' : c <= 77 || c <= 86 ? 'snow' : 'storm');
 // flèche dans le sens où va le vent / la houle
@@ -300,6 +323,7 @@ function build(W, A, B) {
   }));
   DAILY = W.daily.time.slice(0, DAYS).map((d, i) => ({
     day: d, date: parseLocal(d + 'T00:00'), sunrise: parseLocal(W.daily.sunrise[i]), sunset: parseLocal(W.daily.sunset[i]),
+    civil: sunAt(d, -6), naut: sunAt(d, -12), astro: sunAt(d, -18), // crépuscules civil, nautique, astronomique (nuit noire au-delà)
     tmin: W.daily.temperature_2m_min[i], tmax: W.daily.temperature_2m_max[i], code: W.daily.weather_code[i], rain: W.daily.precipitation_sum[i],
   }));
   CUR = W.current;
@@ -328,12 +352,13 @@ function build(W, A, B) {
     TIDES.push({ type, d: new Date(st[i].getTime() + (off * 60 + TIDE_LAG[type]) * 60e3), h: TIDE_K * (b - (a - c) * off / 4) + TIDE_Z0 });
   }
 
+  TIDES.forEach((x, k) => {
+    x.day = x.d.toISOString().slice(0, 10);
+    if (x.type === 'PM' && TIDES[k - 1] && TIDES[k + 1]) x.coef = coefOf(x.h - (TIDES[k - 1].h + TIDES[k + 1].h) / 2);
+  });
   const dayInfo = Object.fromEntries(DAILY.map(x => [x.day, x]));
-  const lows = TIDES.filter(x => x.type === 'BM');
   H.forEach(h => {
     const di = dayInfo[h.day];
-    let nearest = null; lows.forEach(l => { if (!nearest || Math.abs(l.d - h.d) < Math.abs(nearest.d - h.d)) nearest = l; });
-    h.dtLow = nearest ? (h.d - nearest.d) / 3600e3 : null;
     const prev = [...TIDES].reverse().find(x => x.d <= h.d), next = TIDES.find(x => x.d > h.d);
     h.rising = prev ? prev.type === 'BM' : null;
     // Position de la mer : heures par rapport à la marée la plus proche (BM+1, PM−2…)
@@ -354,9 +379,8 @@ function fishScore(h) {
   const dirRaw = interp(dFromW, [[0, 1], [45, .9], [90, .6], [180, .25]]);
   const dir = 1 - (1 - dirRaw) * Math.min(1, ws / 12); // direction compte peu par vent très faible
   const wave = interp(h.hs, [[0, .7], [.3, .9], [.5, 1], [.9, 1], [1.3, .6], [1.8, .25], [2.5, .05]]);
-  const tide = interp(h.dtLow, [[-6.5, .15], [-3.5, .3], [-2.5, .7], [-1.5, 1], [2, 1], [3, .7], [4, .35], [6.5, .15]]);
-  // la marée module tout le reste : conditions parfaites à pleine mer ≈ 45, à basse mer ≈ 100
-  let s = 100 * (.45 * wind + .20 * dir + .35 * wave) * (.35 + .65 * tide);
+  // conditions seules (vent, mer, lumière, pluie) : la marée est laissée à l'appréciation du pêcheur
+  let s = 100 * (.45 * wind + .20 * dir + .35 * wave);
   const twilight = h.sunrise && (Math.abs(h.d - h.sunrise) < 1.6 * 3600e3 || Math.abs(h.d - h.sunset) < 1.6 * 3600e3);
   if (twilight) s += 8;
   if (h.rain > 2) s -= 8;
@@ -365,7 +389,7 @@ function fishScore(h) {
   h.fishWhy = [
     [`Vent ${r0(ws)} km/h ${compass(h.wd)}`, wind * .6 + dir * .4],
     [`Mer ${r1(h.hs)} m`, wave],
-    [h.dtLow == null ? 'Marée inconnue' : Math.abs(h.dtLow) <= 2.2 ? (h.dtLow < 0 ? 'Fin de descendante' : 'Début de montante') : (h.rising ? 'Montante' : 'Descendante'), tide],
+    ...(h.rain > 2 ? [[`Pluie ${r1(h.rain)} mm`, 0]] : []),
     ...(twilight && h.daylight ? [['Aube / crépuscule', 1]] : []),
   ];
 }
@@ -422,6 +446,7 @@ function renderDays() {
       <div class="top"><span class="dn">${name}</span>${wxIcon(d.code)}</div>
       <div class="dd">${d.date.getUTCDate()}</div>
       <div class="tt mono">${r0(d.tmin)}° · ${r0(d.tmax)}°</div>
+      <div class="cf mono">Coef <b>${dayCoefs(d.day).join(' · ') || '—'}</b></div>
       <div class="mini"><span>Bar</span><i><u style="width:${f}%;background:var(--bass)"></u></i><b>${f}</b>
         <span>Surf</span><i><u style="width:${s}%;background:var(--surf)"></u></i><b>${s}</b></div></button>`;
   }).join('');
@@ -433,17 +458,17 @@ function renderMain() {
   $('dayEyebrow').textContent = sel === 0 ? "Aujourd'hui" : sel === 1 ? 'Demain' : 'Prévision';
   $('dayTitle').textContent = D.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
   $('hourTitle').textContent = $('dayTitle').textContent;
-  const bwF = bestWindow(hrs, 'fish'), bwS = bestWindow(hrs, 'surf');
+  const bwS = bestWindow(hrs, 'surf');
   const win = (bw, name, col) => `<div class="win"><div class="k"><i style="background:${col}"></i>${name}</div>`
     + (bw?.from ? `<div class="v mono">${hm(bw.from)}–${hm(bw.to)}<small>${bw.max}</small></div>` : `<div class="v none">Pas de créneau</div>`) + `</div>`;
-  $('wins').innerHTML = win(bwF, 'Créneau bar', 'var(--bass)') + win(bwS, 'Créneau surf', 'var(--surf)');
+  $('wins').innerHTML = win(bwS, 'Créneau surf', 'var(--surf)');
   // même dessin affiché deux fois : une gouttière fixe (intitulés, axe) et la zone horaire qui défile sur mobile
-  const { body, L, W, Ht, focus } = chartSvg(D, hrs, bwF, bwS);
+  const { body, L, W, Ht, focus } = chartSvg(D, hrs, bwS);
   $('chart').innerHTML = `<svg class="gut" viewBox="0 0 ${L} ${Ht}">${body}</svg>
     <div class="scroll"><svg class="main" viewBox="${L} 0 ${W - L} ${Ht}" role="img" aria-label="Marée, vent, vagues, créneaux et pluie">${body}</svg></div>`;
   const sc = $('chart').querySelector('.scroll'), mainSvg = sc.firstElementChild;
   fitGutter();
-  if (sc.scrollWidth > sc.clientWidth) sc.scrollLeft = Math.max(0, (focus - L) * mainSvg.clientWidth / (W - L) - 24);
+  if (sc.scrollWidth > sc.clientWidth) sc.scrollLeft = Math.max(0, (focus - L) * mainSvg.clientWidth / (W - L) - 96);
 
   const t0 = D.date, dayT = TIDES.filter(x => x.d >= t0 && x.d < new Date(t0.getTime() + 864e5));
   const showers = []; let cur = null;
@@ -454,9 +479,12 @@ function renderMain() {
   const rainTot = hrs.reduce((a, x) => a + (x.rain ?? 0), 0);
   const mainShowers = showers.filter(r => r.mm >= .5).sort((a, b) => b.mm - a.mm).slice(0, 2).sort((a, b) => a.from - b.from);
   const fact = (ic, k, v) => `<div class="fact"><div class="k">${icon(ic)}${k}</div><div class="v mono">${v}</div></div>`;
-  $('facts').innerHTML = fact('sunrise', 'Lever', hm(D.sunrise)) + fact('sunset', 'Coucher', hm(D.sunset))
+  $('facts').innerHTML = fact('moon', 'Premières lueurs', D.astro ? hm(D.astro.rise) : '<small>pas de nuit noire</small>')
+    + fact('sunrise', 'Lever', hm(D.sunrise)) + fact('sunset', 'Coucher', hm(D.sunset))
+    + fact('moon', 'Nuit noire', D.astro ? hm(D.astro.set) : '<small>pas de nuit noire</small>')
     + fact('down', 'Basse mer', dayT.filter(x => x.type === 'BM').map(x => hm(x.d)).join(' <small>·</small> ') || '—')
     + fact('up', 'Pleine mer', dayT.filter(x => x.type === 'PM').map(x => hm(x.d)).join(' <small>·</small> ') || '—')
+    + fact('wave', 'Coefficient', (() => { const c = dayCoefs(D.day); return c.length ? `${c.join(' <small>·</small> ')} <small>${coefTxt(Math.max(...c))}</small>` : '—'; })())
     + fact('drop', 'Pluie', rainTot < .5 ? 'Sec' : `${r0(rainTot)} mm <small>` + (mainShowers.length ? 'surtout ' + mainShowers.map(r => `${hm(r.from).slice(0, 2)}h–${hm(r.to).slice(0, 2)}h`).join(', ') : 'faible, éparse') + '</small>')
     + fact('wave', 'Eau', `${r1(hrs[12]?.sst)}°`);
   renderTable(hrs);
@@ -472,8 +500,8 @@ function fitGutter() {
 }
 addEventListener('resize', fitGutter);
 
-function chartSvg(D, hrs, bwF, bwS) {
-  const W = 1000, L = 62, R = 14, CT = 54, CB = 232, Ht = 486;
+function chartSvg(D, hrs, bwS) {
+  const W = 1000, L = 62, R = 14, CT = 54, CB = 232, Ht = 530;
   // échelle fixe (0 → 11 m) pour comparer d'un jour à l'autre : marnage faible en morte-eau, fort en vive-eau
   const all = H.map(x => x.tide).filter(v => v != null), mn = Math.min(0, ...all), mx = Math.max(11, ...all);
   const X = t => L + (W - L - R) * Math.max(0, Math.min(24, t)) / 24, Y = v => CB - (CB - CT) * (v - mn) / (mx - mn);
@@ -490,9 +518,12 @@ function chartSvg(D, hrs, bwF, bwS) {
   }
 
   const sr = hOf(D.sunrise), ss = hOf(D.sunset);
-  const dayBg = `<rect x="${X(sr)}" y="30" width="${X(ss) - X(sr)}" height="${Ht - 30}" rx="10" fill="rgba(255,255,255,.028)"/>`;
+  const span = (a, b, op) => `<rect x="${X(hOf(a))}" y="30" width="${X(hOf(b)) - X(hOf(a))}" height="${Ht - 30}" rx="10" fill="rgba(255,255,255,${op})"/>`;
+  const dayBg = [D.astro, D.naut, D.civil].map(t => t ? span(t.rise, t.set, .011) : '').join('') + span(D.sunrise, D.sunset, .024)
+    + (D.astro ? [[D.astro.rise, 'end', -5], [D.astro.set, 'start', 5]].map(([d, a, dx]) => `<line x1="${X(hOf(d))}" x2="${X(hOf(d))}" y1="${CT - 10}" y2="${CB}" stroke="${css('--mut')}" stroke-opacity=".35" stroke-dasharray="1 4"/>
+      <text x="${X(hOf(d)) + dx}" y="${CB - 6}" font-size="10" fill="${css('--dim')}" text-anchor="${a}" class="s">nuit noire</text>`).join('') : '');
   const grid = [0, 3, 6, 9, 12, 15, 18, 21, 24].map(t => `<line x1="${X(t)}" x2="${X(t)}" y1="${CT - 10}" y2="${CB}" stroke="rgba(255,255,255,.04)"/>
-    <text x="${X(t)}" y="${CB + 22}" font-size="11" fill="${css('--dim')}" text-anchor="middle">${String(t).padStart(2, '0')}h</text>`).join('');
+    <text x="${X(t)}" y="${CB + 22}" font-size="11" fill="${css('--dim')}" text-anchor="${t === 0 ? 'start' : t === 24 ? 'end' : 'middle'}">${String(t).padStart(2, '0')}h</text>`).join('');
   const band = (bw, col) => bw?.from ? `<rect x="${X(hOf(bw.from))}" y="${CT - 12}" width="${X(hOf(bw.to)) - X(hOf(bw.from))}" height="${CB - CT + 12}" fill="${col}" opacity=".07"/>
     <rect x="${X(hOf(bw.from))}" y="${CT - 12}" width="${X(hOf(bw.to)) - X(hOf(bw.from))}" height="2" rx="1" fill="${col}"/>` : '';
   const sun = [[sr, 'Lever', D.sunrise, 'end', -6], [ss, 'Coucher', D.sunset, 'start', 6]].map(([t, n, d, a, dx]) => `
@@ -503,7 +534,7 @@ function chartSvg(D, hrs, bwF, bwS) {
   const marks = dayT.map(x => {
     const tx = X(hOf(x.d)), ty = Y(x.h), lx = Math.max(L + 52, Math.min(W - R - 52, tx)), hi = x.type === 'PM';
     return `<circle cx="${tx}" cy="${ty}" r="4" fill="${css('--surface')}" stroke="${TIDE}" stroke-width="2"/>
-      <text x="${lx}" y="${ty - 24}" font-size="10" paint-order="stroke" stroke="${css('--surface')}" stroke-width="4" stroke-linejoin="round" fill="${css('--mut')}" text-anchor="middle" class="s">${hi ? 'Pleine mer' : 'Basse mer'} · ${r1(x.h)} m</text>
+      <text x="${lx}" y="${ty - 24}" font-size="10" paint-order="stroke" stroke="${css('--surface')}" stroke-width="4" stroke-linejoin="round" fill="${css('--mut')}" text-anchor="middle" class="s">${hi ? 'Pleine mer' : 'Basse mer'} · ${r1(x.h)} m${x.coef ? ' · coef ' + x.coef : ''}</text>
       <text x="${lx}" y="${ty - 10}" font-size="12" paint-order="stroke" stroke="${css('--surface')}" stroke-width="4" stroke-linejoin="round" font-weight="500" fill="${css('--txt')}" text-anchor="middle">${hm(x.d)}</text>`;
   }).join('');
 
@@ -517,7 +548,15 @@ function chartSvg(D, hrs, bwF, bwS) {
   const nowT = H[curHour()]?.t;
 
   // vent : flèche + km/h
-  const WY = 282;
+  // ciel : pictogramme + couverture nuageuse (%)
+  const SY = 274;
+  const sky = label(SY + 4, 'Ciel') + `<text x="6" y="${SY + 18}" font-size="9" fill="${css('--dim')}" class="s" dominant-baseline="middle">nuages</text>` + hrs.map((x, k) => {
+    const cx = X(k) + cw / 2, cc = x.cloud ?? 0, col = cc >= 85 ? css('--mut') : cc >= 50 ? '#a9b2bf' : x.isDay ? css('--sun') : '#c9ccd2';
+    return `<svg x="${cx - 8}" y="${SY - 10}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${wxIcon(x.code, !x.isDay).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>
+      <text x="${cx}" y="${SY + 20}" font-size="9" fill="${css('--dim')}" text-anchor="middle">${r0(x.cloud)}%</text>`;
+  }).join('');
+
+  const WY = 326;
   const wind = label(WY + 6, 'Vent') + hrs.map((x, k) => {
     const cx = X(k) + cw / 2, c = windTone(x.ws);
     return (x.t === nowT ? `<rect x="${X(k) + 2}" y="${WY - 18}" width="${cw - 4}" height="48" rx="8" fill="rgba(124,199,255,.1)"/>` : '')
@@ -526,15 +565,15 @@ function chartSvg(D, hrs, bwF, bwS) {
   }).join('');
 
   // vagues : hauteur (m) + période (s)
-  const VY = 336;
+  const VY = 380;
   const waves = label(VY + 2, 'Vagues') + hrs.map((x, k) => {
     const cx = X(k) + cw / 2;
     return `<text x="${cx}" y="${VY + 4}" font-size="11" font-weight="500" fill="${waveTone(x.hs)}" text-anchor="middle" opacity="${x.daylight ? 1 : .55}">${r1(x.hs)}</text>
       <text x="${cx}" y="${VY + 18}" font-size="9" fill="${css('--dim')}" text-anchor="middle">${r0(x.tp)}s</text>`;
   }).join('');
 
-  // couloirs bar / surf : intensité = score, meilleur créneau encadré
-  const lane = (y, key, bw, col, name) => label(y + 7, name, col)
+  // couloirs bar / surf : intensité = score ; meilleur créneau encadré (surf seulement)
+  const lane = (y, key, bw, col, name, noWin) => label(y + 7, name, col)
     + `<rect x="${X(0)}" y="${y + 6}" width="${X(24) - X(0)}" height="1" fill="rgba(255,255,255,.06)"/>`
     + hrs.map((x, k) => x.daylight && x[key] > 0 ? `<rect x="${X(k) + 1}" y="${y}" width="${cw - 2}" height="14" rx="4" fill="${col}" opacity="${(.06 + .55 * Math.pow(x[key] / 100, 2)).toFixed(2)}"/>` : '').join('')
     + (bw?.from ? (() => {
@@ -543,10 +582,10 @@ function chartSvg(D, hrs, bwF, bwS) {
       if (x2 - x1 >= tw) return pill + `<text x="${(x1 + x2) / 2}" y="${y + 11}" font-size="11" font-weight="500" fill="#06121f" text-anchor="middle">${txt} · ${bw.max}</text>`;
       const right = x2 + tw + 8 < W - R;
       return pill + `<text x="${right ? x2 + 8 : x1 - 8}" y="${y + 11}" font-size="11" text-anchor="${right ? 'start' : 'end'}" paint-order="stroke" stroke="${css('--surface')}" stroke-width="4"><tspan fill="${col}">${txt}</tspan><tspan fill="${css('--mut')}"> ${bw.max}</tspan></text>`;
-    })() : `<text x="${X(0) + 4}" y="${y + 11}" font-size="11" fill="${css('--dim')}" class="s">Pas de bon créneau</text>`);
+    })() : noWin ? '' : `<text x="${X(0) + 4}" y="${y + 11}" font-size="11" fill="${css('--dim')}" class="s">Pas de bon créneau</text>`);
 
   // pluie : barre = quantité attendue (mm sur l'heure) ; en dessous, risque qu'il pleuve (%)
-  const RY = 418, RH = 30, rmax = Math.max(4, ...hrs.map(x => x.rain ?? 0)), dry = hrs.every(x => (x.rain ?? 0) < .1);
+  const RY = 462, RH = 30, rmax = Math.max(4, ...hrs.map(x => x.rain ?? 0)), dry = hrs.every(x => (x.rain ?? 0) < .1);
   const sub = (y, txt) => `<text x="6" y="${y}" font-size="9" fill="${css('--dim')}" class="s" dominant-baseline="middle">${txt}</text>`;
   const rain = label(RY + RH - 16, 'Pluie') + sub(RY + RH - 2, 'mm / h')
     + `<rect x="${X(0)}" y="${RY + RH}" width="${X(24) - X(0)}" height="1" fill="rgba(255,255,255,.08)"/>`
@@ -569,10 +608,10 @@ function chartSvg(D, hrs, bwF, bwS) {
   // sur mobile on fait défiler jusqu'à maintenant (aujourd'hui) ou au lever du soleil
   const focus = nowX != null ? Math.max(X(sr), nowX - 140) : X(sr);
   const body = `<defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${TIDE}" stop-opacity=".22"/><stop offset="1" stop-color="${TIDE}" stop-opacity="0"/></linearGradient></defs>
-    ${dayBg}${grid}${yAxis}${band(bwF, BASS)}${band(bwS, SURF)}
+    ${dayBg}${grid}${yAxis}${band(bwS, SURF)}
     <path d="${path} L${X(24)},${CB} L${X(0)},${CB} Z" fill="url(#tg)"/>
     <path d="${path}" stroke="${TIDE}" stroke-width="2" fill="none" stroke-linecap="round"/>
-    ${marks}${sun}${wind}${waves}${lane(366, 'fish', bwF, BASS, 'Bar')}${lane(390, 'surf', bwS, SURF, 'Surf')}${rain}${now}`;
+    ${marks}${sun}${sky}${wind}${waves}${lane(410, 'fish', null, BASS, 'Bar', true)}${lane(434, 'surf', bwS, SURF, 'Surf')}${rain}${now}`;
   return { body, L, W, Ht, focus };
 }
 
@@ -581,7 +620,7 @@ function renderNow() {
   const nextT = TIDES.find(x => x.d > n);
   const dayName = d => d.toLocaleDateString('fr-FR', { weekday: 'long', timeZone: 'UTC' });
 
-  const score = (title, col, key, whyKey) => {
+  const score = (title, col, key, whyKey, showNext = true) => {
     // prochain bon créneau à partir de maintenant (aujourd'hui, sinon les jours suivants)
     const from = new Date(n - 3600e3);
     let next = null, nk = 0;
@@ -593,19 +632,19 @@ function renderNow() {
       <div class="s-main"><span class="s-num mono" style="color:${night ? 'var(--dim)' : tone(s)}">${night ? '—' : s}</span>
         <span class="s-verdict" style="color:${night ? 'var(--mut)' : tone(s)}">${night ? 'Nuit' : verdict(s)}</span></div>
       <div class="s-track"><i style="width:${night ? 0 : s}%;background:${tone(s)}"></i></div>
-      <div class="kv"><span class="k">Prochain créneau</span><span class="v mono">${next ? `${nk === 0 ? "Auj." : nk === 1 ? 'Demain' : dayName(next.from)} ${hm(next.from)}–${hm(next.to)}` : '—'}</span></div>
-      <div class="kv"><span class="k">Top 8 jours</span><span class="v mono">${top ? `${dayName(top.from)} ${hm(top.from)} · ${top.max}` : '—'}</span></div>
+      ${showNext ? `<div class="kv"><span class="k">Prochain créneau</span><span class="v mono">${next ? `${nk === 0 ? "Auj." : nk === 1 ? 'Demain' : dayName(next.from)} ${hm(next.from)}–${hm(next.to)}` : '—'}</span></div>` : ''}
+      <div class="kv"><span class="k">${showNext ? 'Top 8 jours' : 'Meilleur moment'}</span><span class="v mono">${top ? `${dayName(top.from)} ${hm(top.from)} · ${top.max}` : '—'}</span></div>
       <ul class="why">${h[whyKey].map(([t, v]) => `<li><i style="background:${v >= .75 ? 'var(--good)' : v >= .45 ? 'var(--mid)' : 'var(--bad)'}"></i>${t}</li>`).join('')}</ul>
     </div>`;
   };
 
   const m = (k, v, unit, sub, extra = '') => `<div class="m"><div class="k">${k}</div><div class="row"><div class="v mono">${v}<small>${unit}</small></div>${extra}</div><div class="sub">${sub}</div></div>`;
-  $('now').innerHTML = score('Pêche au bar', 'var(--bass)', 'fish', 'fishWhy') + score('Surf', 'var(--surf)', 'surf', 'surfWhy')
+  $('now').innerHTML = score('Bar · conditions', 'var(--bass)', 'fish', 'fishWhy', false) + score('Surf', 'var(--surf)', 'surf', 'surfWhy')
     + `<div class="metrics">
       ${m('Vent', r0(c.wind_speed_10m), 'km/h', `Rafales ${r0(c.wind_gusts_10m)} · ${compass(c.wind_direction_10m)} ${r0(c.wind_direction_10m)}°`, dial(c.wind_direction_10m, windTone(c.wind_speed_10m)))}
       ${m('Vagues', r1(h.hs), 'm', `${r1(h.tp)} s · ${compass(h.dp)}`, dial(h.dp, css('--tide')))}
       ${m('Houle', r1(h.sh), 'm', `${r1(h.sp)} s · ${compass(h.sd)}`, dial(h.sd, css('--surf')))}
-      ${m('Marée', h.rising ? 'Montante' : 'Descendante', '', `Hauteur ${r1(h.tide)} m` + (nextT ? ` · ${nextT.type === 'PM' ? 'PM' : 'BM'} ${hm(nextT.d)}` : ''), `<span style="color:var(--tide)">${icon(h.rising ? 'up' : 'down')}</span>`).replace('class="v mono"', 'class="v" style="font-size:20px;letter-spacing:-.02em"')}
+      ${m('Marée', h.rising ? 'Montante' : 'Descendante', '', `Hauteur ${r1(h.tide)} m` + (nextT ? ` · ${nextT.type === 'PM' ? 'PM' : 'BM'} ${hm(nextT.d)}` : '') + (() => { const pm = TIDES.find(x => x.coef && x.d > n) || [...TIDES].reverse().find(x => x.coef); return pm ? ` · coef ${pm.coef}` : ''; })(), `<span style="color:var(--tide)">${icon(h.rising ? 'up' : 'down')}</span>`).replace('class="v mono"', 'class="v" style="font-size:20px;letter-spacing:-.02em"')}
       ${m('Air · eau', `${r0(c.temperature_2m)}°`, ` / ${r1(h.sst)}°`, `Ressenti ${r0(c.apparent_temperature)}° · ${r0(c.pressure_msl)} hPa`)}
       ${m('Ciel', r1(c.precipitation), 'mm', `Pluie ${r0(h.rainP)} % · nuages ${r0(h.cloud)} %`, `<span style="color:var(--mut)">${wxIcon(c.weather_code, !c.is_day).replace('class="i"', 'class="i" style="width:30px;height:30px;stroke-width:1.3"')}</span>`)}
     </div>`;
@@ -622,6 +661,7 @@ function renderTable(hrs) {
   $('hours').innerHTML = [
     row('', x => cell(x, x.t.slice(11, 13)), 'hrow'),
     row('Ciel', x => cell(x, `<span style="color:var(--mut)">${wxIcon(x.code, !x.isDay)}</span>`)),
+    row('Nuages %', x => cell(x, `<span style="color:${(x.cloud ?? 0) >= 50 ? 'var(--txt)' : 'var(--mut)'}">${r0(x.cloud)}</span><span class="sub2">${skyTxt(x.cloud)}</span>`)),
     row('Vent km/h', x => cell(x, `<span class="pill" style="${tint(windTone(x.ws), 14)}">${r0(x.ws)}</span>`)),
     row('Rafales', x => cell(x, `<span style="color:${windTone(x.wg)}">${r0(x.wg)}</span>`)),
     row('Direction', x => cell(x, arrow(x.wd, windTone(x.ws)) + `<span class="sub2">${compass(x.wd)}</span>`)),
