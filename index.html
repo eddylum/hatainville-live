@@ -36,6 +36,11 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 .status{display:flex;align-items:center;gap:14px;color:var(--mut);font-size:12px}
 .pulse{width:6px;height:6px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(94,224,160,.5);animation:pulse 2.4s infinite}
 @keyframes pulse{70%{box-shadow:0 0 0 7px rgba(94,224,160,0)}100%{box-shadow:0 0 0 0 rgba(94,224,160,0)}}
+.tabs{display:flex;gap:4px;padding:3px;border:1px solid var(--line-2);border-radius:11px;margin-left:auto}
+.tabs a{border:0;padding:6px 12px;border-radius:8px;font-size:13px;color:var(--mut);white-space:nowrap;transition:.2s}
+.tabs a:hover{color:var(--txt)}
+.tabs a.on{background:var(--surface-2);color:var(--txt)}
+@media(max-width:640px){header{flex-wrap:wrap}.tabs{order:3;width:100%;margin-left:0}.tabs a{flex:1;text-align:center}}
 .icon-btn{background:none;border:1px solid var(--line-2);color:var(--mut);width:32px;height:32px;border-radius:9px;display:grid;place-items:center;cursor:pointer;transition:.2s}
 .icon-btn:hover{color:var(--txt);border-color:var(--mut)}
 .icon-btn.spin svg{animation:spin .8s linear infinite}
@@ -152,8 +157,9 @@ td svg.i{width:14px;height:14px;display:block;margin:0 auto}
   <header>
     <div class="brand">
       <div class="mark"><svg class="i" viewBox="0 0 24 24"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M7 9a5 5 0 0 1 10 0"/></svg></div>
-      <div><div class="name">Hatainville</div><div class="meta">Côte ouest du Cotentin</div></div>
+      <div><div class="name" id="spotName">Hatainville</div><div class="meta" id="spotSub">Côte ouest du Cotentin</div></div>
     </div>
+    <nav class="tabs" id="tabs"></nav>
     <div class="status"><span class="pulse"></span><span id="clock" class="mono">—</span>
       <button id="refresh" class="icon-btn" title="Actualiser" aria-label="Actualiser"><svg class="i" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button></div>
   </header>
@@ -175,12 +181,13 @@ td svg.i{width:14px;height:14px;display:block;margin:0 auto}
   <div class="sec"><h3>Heure par heure</h3><span id="hourTitle"></span></div>
   <section class="panel" style="padding:8px 0"><div class="tbl"><table id="hours"></table></div></section>
 
-  <div class="sec"><h3>Windguru</h3><a href="https://www.windguru.cz/48400" target="_blank" rel="noopener">Ouvrir le spot 48400 ↗</a></div>
+  <div class="sec" id="wgHead"><h3>Windguru</h3><a href="https://www.windguru.cz/48400" target="_blank" rel="noopener">Ouvrir le spot 48400 ↗</a></div>
   <section class="panel" id="wgBox">
     <div class="wg" id="wgWrap">
     <script id="wg_fwdg_48400_100_hat">
     (function (window, document) {
       var loader = function () {
+        if (!SPOT.wg) return;
         var arg = ["s=48400","m=100","mw=84","uid=wg_fwdg_48400_100_hat","wj=kmh","tj=c","waj=m","tij=cm","odh=0","do=0","dh=24","fhours=192","hrsm=1","vt=forecasts","lng=fr","idbs=1","p=WINDSPD,GUST,SMER,HTSGW,PERPW,DIRPW,TMPE,CDC,APCP1s,RATING"];
         var script = document.createElement("script");
         var tag = document.getElementsByTagName("script")[0];
@@ -200,19 +207,36 @@ td svg.i{width:14px;height:14px;display:block;margin:0 auto}
   </section>
 
   <p class="foot">Vent et météo : Météo-France AROME / ARPEGE. Vagues et houle : Météo-France MFWAM. Données via Open-Meteo, actualisées toutes les 10 minutes.
-  Marée : modèle océanique calé sur les prédictions SHOM de Carteret (horaires à ±15 min, hauteurs à ±0,3 m environ), hauteurs en mètres au-dessus du zéro des cartes comme dans les annuaires ; coefficient estimé d'après le marnage (±2 à 5 points) — horaires et coefficients officiels sur <a href="https://maree.info/" target="_blank" rel="noopener">maree.info</a> (Carteret).
-  Bar : conditions seules (vent &lt; 10–15 km/h, ouest léger &gt; est, mer peu agitée, bonus aube et crépuscule, malus forte pluie), sans tenir compte de la marée. Surf : 1–2,3 m, période ≥ 10 s, vent d'est ou faible, houle d'ouest, mi-marée. Aucun score la nuit.
+  Marée : modèle océanique calé sur les prédictions SHOM de <span class="portName">Carteret</span> (horaires à ±20 min, hauteurs à ±0,4 m environ), hauteurs en mètres au-dessus du zéro des cartes comme dans les annuaires ; coefficient estimé d'après le marnage (±2 à 5 points) — horaires et coefficients officiels sur <a id="mareeLink" href="https://maree.info/38" target="_blank" rel="noopener">maree.info</a> (<span class="portName">Carteret</span>).
+  Bar : conditions seules (vent &lt; 10–15 km/h, ouest léger &gt; est, mer peu agitée, bonus aube et crépuscule, malus forte pluie), sans tenir compte de la marée. Surf : 1–2,3 m, période ≥ 10 s, vent de terre ou faible, houle du large, mi-marée. Aucun score la nuit.
   Premières lueurs / nuit noire : soleil à 18° sous l'horizon (fin et début du crépuscule astronomique) ; sur le schéma, le fond s'éclaircit par paliers aux crépuscules nautique (−12°) et civil (−6°). Nuages : couverture totale en %, « couvert » au-delà de 85 %.</p>
 </div>
 
 <script>
-const LAT = 49.395, LON = -1.80, MLAT = 49.40, MLON = -1.86, TZ = 'Europe/Paris';
+// Spots : point météo (plage), point marin (au large), calage de la marée sur le port SHOM voisin
+// (hauteur = k × modèle + z0, retard du modèle en minutes), coefficient = a × marnage + b,
+// orientation de la plage (offshore = d'où vient le vent de terre, swell = houle idéale)
+const SPOTS = {
+  hatainville: { name: 'Hatainville', sub: 'Côte ouest du Cotentin', lat: 49.395, lon: -1.80, mlat: 49.40, mlon: -1.86,
+    port: 'Carteret', mi: 38, k: 1.036, z0: 6.03, lag: { PM: 25, BM: 42 }, coef: [8.61, 8], offshore: 90, swell: 270, wg: 48400 },
+  portbail: { name: 'Portbail-sur-Mer', sub: 'Côte des Isles', lat: 49.327, lon: -1.722, mlat: 49.30, mlon: -1.78,
+    port: 'Portbail', mi: 39, k: 1.017, z0: 6.44, lag: { PM: 25, BM: 51 }, coef: [8.176, 7.47], offshore: 65, swell: 245,
+    wg: null, alt: ['Windfinder', 'https://www.windfinder.com/forecast/portbail-la-plage'] },
+};
+const SPOT_ID = (() => {
+  const q = new URLSearchParams(location.search).get('s');
+  if (SPOTS[q]) return q;
+  try { const m = localStorage.getItem('spot'); if (SPOTS[m]) return m; } catch (e) {}
+  return 'hatainville';
+})();
+try { localStorage.setItem('spot', SPOT_ID); } catch (e) {}
+const SPOT = SPOTS[SPOT_ID];
+const LAT = SPOT.lat, LON = SPOT.lon, MLAT = SPOT.mlat, MLON = SPOT.mlon, TZ = 'Europe/Paris';
 const DAYS = 8;
-// Calage du modèle Open-Meteo sur les marées officielles SHOM de Carteret :
-// hauteur au-dessus du zéro des cartes = 1,036 × niveau modèle + 6,03 m ; le modèle est en avance (≈ 25 min à PM, 42 min à BM)
-const TIDE_K = 1.036, TIDE_Z0 = 6.03, TIDE_LAG = { PM: 25, BM: 42 }, TIDE_LAG_MEAN = 34;
+// Calage du modèle Open-Meteo sur les marées officielles SHOM du port voisin (hauteur au-dessus du zéro des cartes)
+const TIDE_K = SPOT.k, TIDE_Z0 = SPOT.z0, TIDE_LAG = SPOT.lag, TIDE_LAG_MEAN = (SPOT.lag.PM + SPOT.lag.BM) / 2;
 // coefficient estimé depuis le marnage (PM − moyenne des BM voisines), calé sur les coefficients officiels de novembre 2026 (écart ≈ ±2)
-const coefOf = range => Math.round(Math.max(20, Math.min(120, 8.61 * range + 8)));
+const coefOf = range => Math.round(Math.max(20, Math.min(120, SPOT.coef[0] * range + SPOT.coef[1])));
 const coefTxt = c => c >= 95 ? 'grande marée' : c >= 70 ? 'vive-eau' : c <= 45 ? 'morte-eau' : 'moyenne';
 const dayCoefs = day => TIDES.filter(x => x.coef && x.day === day).map(x => x.coef);
 let H = [], TIDES = [], DAILY = [], CUR = null, sel = 0, CHART = null;
@@ -399,11 +423,11 @@ function surfScore(h) {
   const per = h.sp ?? h.tp;
   const sz = interp(size, [[.3, 0], [.5, .2], [.8, .55], [1.2, .85], [1.5, 1], [2.3, 1], [3, .7], [4, .3]]);
   const pr = interp(per, [[5, .05], [7, .35], [9, .65], [11, .9], [13, 1]]);
-  const ws = h.ws ?? 0, dOff = h.wd == null ? 90 : angDiff(h.wd, 90); // plage orientée ouest : offshore = vent d'est
+  const ws = h.ws ?? 0, dOff = h.wd == null ? 90 : angDiff(h.wd, SPOT.offshore); // vent de terre selon l'orientation de la plage
   const off = interp(dOff, [[0, 1], [60, .9], [100, .55], [140, .25], [180, 0]]);
   let wind = ws < 6 ? 1 : off + (1 - off) * interp(ws, [[6, .9], [12, .4], [20, .1], [30, 0]]);
   if (dOff < 90 && ws > 35) wind *= .7;
-  const sdir = interp(h.sd == null ? 30 : angDiff(h.sd ?? h.dp, 270), [[0, 1], [50, .9], [80, .5], [120, .1]]);
+  const sdir = interp(h.sd == null ? 30 : angDiff(h.sd ?? h.dp, SPOT.swell), [[0, 1], [50, .9], [80, .5], [120, .1]]);
   const tide = interp(h.tideFrac, [[0, .6], [.5, 1], [1, .65]]);
   let s = 100 * (.30 * sz + .25 * pr + .30 * wind + .10 * sdir + .05 * tide);
   if (sz < .2) s *= .4;
@@ -712,6 +736,17 @@ function renderTable(hrs) {
     row('<span style="color:var(--bass)">●</span> Bar', x => scoreCell(x, 'fish')),
     row('<span style="color:var(--surf)">●</span> Surf', x => scoreCell(x, 'surf')),
   ].join('');
+}
+
+// en-tête, onglets, liens et Windguru selon le spot
+document.title = SPOT.name + ' Live';
+$('spotName').textContent = SPOT.name; $('spotSub').textContent = SPOT.sub;
+$('tabs').innerHTML = Object.entries(SPOTS).map(([id, x]) => `<a href="?s=${id}" class="${id === SPOT_ID ? 'on' : ''}">${x.name.replace('-sur-Mer', '')}</a>`).join('');
+document.querySelectorAll('.portName').forEach(e => e.textContent = SPOT.port);
+$('mareeLink').href = 'https://maree.info/' + SPOT.mi;
+if (!SPOT.wg) {
+  $('wgHead').innerHTML = `<h3>Prévisions détaillées</h3><a href="${SPOT.alt[1]}" target="_blank" rel="noopener">${SPOT.alt[0]} ↗</a>`;
+  $('wgBox').innerHTML = `<div class="fallback"><span>Pas de spot Windguru pour ${SPOT.name}.</span><a href="${SPOT.alt[1]}" target="_blank" rel="noopener">Voir sur ${SPOT.alt[0]} ↗</a></div>`;
 }
 
 const tick = () => { $('clock').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TZ }); };
