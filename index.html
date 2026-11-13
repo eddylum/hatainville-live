@@ -208,7 +208,7 @@ td svg.i{width:14px;height:14px;display:block;margin:0 auto}
 
   <p class="foot">Vent et météo : Météo-France AROME / ARPEGE. Vagues et houle : Météo-France MFWAM. Données via Open-Meteo, actualisées toutes les 10 minutes.
   Marée : modèle océanique calé sur les prédictions SHOM de <span class="portName">Carteret</span> (horaires à ±20 min, hauteurs à ±0,4 m environ), hauteurs en mètres au-dessus du zéro des cartes comme dans les annuaires ; coefficient estimé d'après le marnage (±2 à 5 points) — horaires et coefficients officiels sur <a id="mareeLink" href="https://maree.info/38" target="_blank" rel="noopener">maree.info</a> (<span class="portName">Carteret</span>).
-  Bar : conditions seules (vent &lt; 10–15 km/h, ouest léger &gt; est, mer peu agitée, bonus aube et crépuscule, malus forte pluie), sans tenir compte de la marée. Surf : 1–2,3 m, période ≥ 10 s, vent de terre ou faible, houle du large, mi-marée. Aucun score la nuit.
+  Bar : vent &lt; 10–15 km/h, ouest léger &gt; est, mer peu agitée, bonus aube et crépuscule, malus forte pluie ; la marée retire jusqu'à 30 % près de la pleine mer (basse mer et mi-marée sans pénalité). Surf : 1–2,3 m, période ≥ 10 s, vent de terre ou faible, houle du large, mi-marée. Aucun score la nuit.
   Premières lueurs / nuit noire : soleil à 18° sous l'horizon (fin et début du crépuscule astronomique) ; sur le schéma, le fond s'éclaircit par paliers aux crépuscules nautique (−12°) et civil (−6°). Nuages : couverture totale en %, « couvert » au-delà de 85 %.</p>
 </div>
 
@@ -403,8 +403,10 @@ function fishScore(h) {
   const dirRaw = interp(dFromW, [[0, 1], [45, .9], [90, .6], [180, .25]]);
   const dir = 1 - (1 - dirRaw) * Math.min(1, ws / 12); // direction compte peu par vent très faible
   const wave = interp(h.hs, [[0, .7], [.3, .9], [.5, 1], [.9, 1], [1.3, .6], [1.8, .25], [2.5, .05]]);
-  // conditions seules (vent, mer, lumière, pluie) : la marée est laissée à l'appréciation du pêcheur
-  let s = 100 * (.45 * wind + .20 * dir + .35 * wave);
+  // conditions (vent, mer) ; la marée ne fait que retirer des points près de la pleine mer :
+  // basse mer et mi-marée = plein score, haut de l'eau −15 %, étale de pleine mer −30 %
+  const fr = Math.max(0, Math.min(1, h.tideFrac ?? .5)), tide = interp(fr, [[0, 1], [.6, 1], [.8, .85], [1, .7]]);
+  let s = 100 * (.45 * wind + .20 * dir + .35 * wave) * tide;
   const twilight = h.sunrise && (Math.abs(h.d - h.sunrise) < 1.6 * 3600e3 || Math.abs(h.d - h.sunset) < 1.6 * 3600e3);
   if (twilight) s += 8;
   if (h.rain > 2) s -= 8;
@@ -413,6 +415,7 @@ function fishScore(h) {
   h.fishWhy = [
     [`Vent ${r0(ws)} km/h ${compass(h.wd)}`, wind * .6 + dir * .4],
     [`Mer ${r1(h.hs)} m`, wave],
+    [fr >= .8 ? 'Pleine mer proche' : fr >= .6 ? "Haut de l'eau" : fr <= .25 ? 'Basse mer' : h.rising ? 'Mi-montante' : 'Mi-descendante', tide >= .95 ? 1 : tide >= .8 ? .6 : .3],
     ...(h.rain > 2 ? [[`Pluie ${r1(h.rain)} mm`, 0]] : []),
     ...(twilight && h.daylight ? [['Aube / crépuscule', 1]] : []),
   ];
